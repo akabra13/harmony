@@ -1,0 +1,65 @@
+# Purchase orders. Today is 2026-09-02.
+
+# Scenario A. Promised 09-04 on paper; Kestrel's email says 09-08, and 09-08 is
+# after production order 4812 is due to start.
+- po_id: PO-77812
+  part_id: P-4471
+  supplier_id: S-Y
+  qty: 400
+  unit_price: 42.00
+  total_value: 16800.00
+  ordered_date: '2026-08-26'
+  promised_date: '2026-09-04'
+  status: open
+  created_by: u-101
+
+# NOISE — a different open PO with the same supplier, arriving on time. Kestrel
+# also sent an email about this one (M-003), which reads like a shipping update
+# but reports no delay. Extraction has to tell the two apart.
+- po_id: PO-77790
+  part_id: P-2218
+  supplier_id: S-Y
+  qty: 300
+  unit_price: 12.50
+  total_value: 3750.00
+  ordered_date: '2026-08-20'
+  promised_date: '2026-09-01'
+  status: open
+  created_by: u-101
+
+# NOISE — this is why P-3390 being below safety stock is not a problem.
+- po_id: PO-77801
+  part_id: P-3390
+  supplier_id: S-Z
+  qty: 200
+  unit_price: 156.00
+  total_value: 31200.00
+  ordered_date: '2026-08-24'
+  promised_date: '2026-09-03'
+  status: open
+  created_by: u-101
+
+# History: a previous P-4471 order that arrived and was received. Gives the
+# arrival check something to contrast the missing receipt against.
+- po_id: PO-77755
+  part_id: P-4471
+  supplier_id: S-Z
+  qty: 250
+  unit_price: 46.50
+  total_value: 11625.00
+  ordered_date: '2026-08-05'
+  promised_date: '2026-08-14'
+  status: received
+  created_by: u-101
+
+# The high-value case. Delayed by M-008, and a replacement exceeds Dana's limit.
+- po_id: PO-77820
+  part_id: P-5540
+  supplier_id: S-Y
+  qty: 40
+  unit_price: 890.00
+  total_value: 35600.00
+  ordered_date: '2026-08-28'
+  promised_date: '2026-09-05'
+  status: open
+  created_by: u-101

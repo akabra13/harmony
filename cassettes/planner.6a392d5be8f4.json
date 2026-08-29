@@ -1,0 +1,219 @@
+{
+  "call_site": "planner",
+  "key": "6a392d5be8f4968080a2160cdba7ce0969847f2971dffff17c91b0e868c15ed7",
+  "request": {
+    "output_schema": {
+      "$defs": {
+        "ActionKind": {
+          "enum": [
+            "workflow",
+            "tools",
+            "none"
+          ],
+          "title": "ActionKind",
+          "type": "string"
+        },
+        "EvidenceRef": {
+          "description": "A citation from the proposal back into what the agent saw.",
+          "properties": {
+            "detail": {
+              "default": "",
+              "title": "Detail",
+              "type": "string"
+            },
+            "ref": {
+              "title": "Ref",
+              "type": "string"
+            },
+            "source": {
+              "title": "Source",
+              "type": "string"
+            }
+          },
+          "required": [
+            "source",
+            "ref"
+          ],
+          "title": "EvidenceRef",
+          "type": "object"
+        },
+        "PlannedCall": {
+          "description": "One tool call as the model proposes it.",
+          "properties": {
+            "params": {
+              "additionalProperties": true,
+              "title": "Params",
+              "type": "object"
+            },
+            "rationale": {
+              "default": "",
+              "title": "Rationale",
+              "type": "string"
+            },
+            "tool": {
+              "title": "Tool",
+              "type": "string"
+            }
+          },
+          "required": [
+            "tool"
+          ],
+          "title": "PlannedCall",
+          "type": "object"
+        }
+      },
+      "description": "The schema the planner model is required to fill in.\n\nFlat rather than a discriminated union: tool-use schemas are more reliably\nfilled when the branch is an enum field and the branches are separate optional\nobjects. :meth:`to_proposal` converts to the typed union and rejects\ninconsistent combinations, so the looseness stops at this boundary.",
+      "properties": {
+        "action_kind": {
+          "$ref": "#/$defs/ActionKind",
+          "description": "'workflow' to enter a declared workflow, 'tools' to propose individual tool calls, 'none' if no action is warranted."
+        },
+        "alternatives_considered": {
+          "description": "Options you weighed and set aside, and why.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Alternatives Considered",
+          "type": "array"
+        },
+        "evidence": {
+          "description": "Records that justify this, cited by id.",
+          "items": {
+            "$ref": "#/$defs/EvidenceRef"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "no_action_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Required when action_kind is 'none'.",
+          "title": "No Action Reason"
+        },
+        "reasoning": {
+          "description": "Why you concluded this, referring to specific records you were shown.",
+          "title": "Reasoning",
+          "type": "string"
+        },
+        "summary": {
+          "description": "One sentence for the human: the problem and what you propose.",
+          "title": "Summary",
+          "type": "string"
+        },
+        "tool_calls": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/PlannedCall"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Required when action_kind is 'tools'.",
+          "title": "Tool Calls"
+        },
+        "workflow_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Required when action_kind is 'workflow'.",
+          "title": "Workflow Name"
+        },
+        "workflow_params": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Parameters for the workflow, matching its declared schema.",
+          "title": "Workflow Params"
+        }
+      },
+      "required": [
+        "summary",
+        "reasoning",
+        "action_kind"
+      ],
+      "title": "PlannerOutput",
+      "type": "object"
+    },
+    "prompt": "## Who you are acting for\n\nPriya Raghunathan, Quality Manager (id: u-202).\nToday is 2026-09-02.\n\n## What was noticed\n\n{\n  \"detector\": \"lot_hold_allocation_risk\",\n  \"title\": \"Lot L-2093 is on hold and allocated to production order 4820, which starts in 3 day(s)\",\n  \"severity\": \"critical\",\n  \"subjects\": [\n    {\n      \"kind\": \"lot\",\n      \"id\": \"L-2093\"\n    },\n    {\n      \"kind\": \"part\",\n      \"id\": \"P-1188\"\n    },\n    {\n      \"kind\": \"production_order\",\n      \"id\": \"4820\"\n    }\n  ],\n  \"findings\": {\n    \"held_lot\": {\n      \"lot_id\": \"L-2093\",\n      \"part_id\": \"P-1188\",\n      \"qty\": 100,\n      \"hold_reason\": \"Surface finish 3.4 Ra against a 3.2 Ra specification\",\n      \"hold_placed_on\": \"2026-09-02\"\n    },\n    \"production_order\": {\n      \"id\": \"4820\",\n      \"product\": \"PRD-BR90 Bearing Housing Assembly\",\n      \"line\": \"Line 1\",\n      \"scheduled_start\": \"2026-09-05\",\n      \"supervisor_id\": \"u-301\",\n      \"qty_required\": 90,\n      \"days_until_start\": 3\n    },\n    \"part\": {\n      \"id\": \"P-1188\",\n      \"description\": \"Bearing race, hardened, 45mm\"\n    },\n    \"alternative_lots\": [\n      {\n        \"lot_id\": \"L-2101\",\n        \"qty\": 140,\n        \"received_date\": \"2026-08-30\",\n        \"covers_requirement\": true\n      }\n    ],\n    \"coverage_available\": true,\n    \"shortfall_qty\": 0\n  },\n  \"evidence\": [\n    {\n      \"source\": \"quality\",\n      \"ref\": \"L-2093\",\n      \"detail\": \"on hold since 2026-09-02: Surface finish 3.4 Ra against a 3.2 Ra specification\"\n    },\n    {\n      \"source\": \"erp\",\n      \"ref\": \"4820\",\n      \"detail\": \"PRD-BR90 Bearing Housing Assembly on Line 1 starts 2026-09-05 and needs 90 of P-1188\"\n    },\n    {\n      \"source\": \"quality\",\n      \"ref\": \"L-2101\",\n      \"detail\": \"released and unallocated, 140 units \\u2014 covers the 90 needed\"\n    }\n  ]\n}\n\n## Context gathered\n\n{\n  \"quality\": {\n    \"lots\": [\n      {\n        \"lot_id\": \"L-2093\",\n        \"part_id\": \"P-1188\",\n        \"qty\": 100,\n        \"status\": \"hold\",\n        \"received_date\": \"2026-08-28\",\n        \"allocated_to\": [\n          \"4820\"\n        ],\n        \"hold_reason\": \"Surface finish 3.4 Ra against a 3.2 Ra specification\",\n        \"hold_placed_on\": \"2026-09-02\"\n      },\n      {\n        \"lot_id\": \"L-2065\",\n        \"part_id\": \"P-1188\",\n        \"qty\": 75,\n        \"status\": \"scrapped\",\n        \"received_date\": \"2026-08-10\",\n        \"allocated_to\": [],\n        \"hold_reason\": \"Dimensional failure at incoming inspection\",\n        \"hold_placed_on\": \"2026-08-12\"\n      },\n      {\n        \"lot_id\": \"L-2088\",\n        \"part_id\": \"P-1188\",\n        \"qty\": 40,\n        \"status\": \"released\",\n        \"received_date\": \"2026-08-22\",\n        \"allocated_to\": [\n          \"4830\"\n        ],\n        \"hold_reason\": null,\n        \"hold_placed_on\": null\n      },\n      {\n        \"lot_id\": \"L-2101\",\n        \"part_id\": \"P-1188\",\n        \"qty\": 140,\n        \"status\": \"released\",\n        \"received_date\": \"2026-08-30\",\n        \"allocated_to\": [],\n        \"hold_reason\": null,\n        \"hold_placed_on\": null\n      }\n    ],\n    \"shortage_flags\": []\n  },\n  \"erp\": {\n    \"parts\": [\n      {\n        \"part_id\": \"P-1188\",\n        \"description\": \"Bearing race, hardened, 45mm\",\n        \"on_hand\": 280,\n        \"daily_usage\": 20.0,\n        \"safety_stock\": 60,\n        \"unit_cost\": 18.75,\n        \"lot_tracked\": true\n      }\n    ],\n    \"suppliers\": [\n      {\n        \"supplier_id\": \"S-Q\",\n        \"name\": \"Apex Rapid Supply\",\n        \"contact_email\": \"deals@apexrapid.example\",\n        \"approved\": true,\n        \"approved_parts\": [\n          \"P-9002\"\n        ],\n        \"lead_time_days\": 1,\n        \"pricing\": {\n          \"P-4471\": 38.0\n        },\n        \"on_time_rate\": 0.71\n      },\n      {\n        \"supplier_id\": \"S-T\",\n        \"name\": \"Voss Antriebe GmbH\",\n        \"contact_email\": \"vertrieb@voss-antriebe.example\",\n        \"approved\": true,\n        \"approved_parts\": [\n          \"P-5540\"\n        ],\n        \"lead_time_days\": 3,\n        \"pricing\": {\n          \"P-5540\": 940.0\n        },\n        \"on_time_rate\": 0.91\n      },\n      {\n        \"supplier_id\": \"S-V\",\n        \"name\": \"Northwind Materials\",\n        \"contact_email\": \"sales@northwindmaterials.example\",\n        \"approved\": true,\n        \"approved_parts\": [\n          \"P-1188\"\n        ],\n        \"lead_time_days\": 4,\n        \"pricing\": {\n          \"P-1188\": 19.4\n        },\n        \"on_time_rate\": 0.85\n      },\n      {\n        \"supplier_id\": \"S-W\",\n        \"name\": \"Halstead Precision\",\n        \"contact_email\": \"orders@halsteadprecision.example\",\n        \"approved\": true,\n        \"approved_parts\": [\n          \"P-4471\",\n          \"P-1188\"\n        ],\n        \"lead_time_days\": 9,\n        \"pricing\": {\n          \"P-4471\": 41.0,\n          \"P-1188\": 18.2\n        },\n        \"on_time_rate\": 0.88\n      },\n      {\n        \"supplier_id\": \"S-Y\",\n        \"name\": \"Kestrel Components\",\n        \"contact_email\": \"rita.alvarez@kestrelcomponents.example\",\n        \"approved\": true,\n        \"approved_parts\": [\n          \"P-4471\",\n          \"P-2218\",\n          \"P-5540\"\n        ],\n        \"lead_time_days\": 6,\n        \"pricing\": {\n          \"P-4471\": 42.0,\n          \"P-2218\": 12.5,\n          \"P-5540\": 890.0\n        },\n        \"on_time_rate\": 0.62\n      },\n      {\n        \"supplier_id\": \"S-Z\",\n        \"name\": \"Meridian Drives\",\n        \"contact_email\": \"sales@meridiandrives.example\",\n        \"approved\": true,\n        \"approved_parts\": [\n          \"P-4471\",\n          \"P-3390\"\n        ],\n        \"lead_time_days\": 2,\n        \"pricing\": {\n          \"P-4471\": 46.5,\n          \"P-3390\": 156.0\n        },\n        \"on_time_rate\": 0.94\n      }\n    ],\n    \"purchase_orders\": [],\n    \"production_orders\": [\n      {\n        \"prod_order_id\": \"4820\",\n        \"product\": \"PRD-BR90 Bearing Housing Assembly\",\n        \"qty\": 30,\n        \"scheduled_start\": \"2026-09-05\",\n        \"scheduled_end\": \"2026-09-08\",\n        \"status\": \"planned\",\n        \"line\": \"Line 1\",\n        \"supervisor_id\": \"u-301\",\n        \"components\": [\n          {\n            \"part_id\": \"P-1188\",\n            \"qty\": 90\n          }\n        ]\n      }\n    ]\n  },\n  \"mail\": {\n    \"messages\": [\n      {\n        \"message_id\": \"M-006\",\n        \"direction\": \"inbound\",\n        \"from_addr\": \"ingrid.sorensen@northfield-mfg.example\",\n        \"to_addrs\": [\n          \"priya.raghunathan@northfield-mfg.example\"\n        ],\n        \"date\": \"2026-09-02T07:48:00\",\n        \"subject\": \"L-2093 placed on hold \\u2014 surface finish\",\n        \"body\": \"Priya,\\n\\nI have put L-2093 on hold. Ten-piece sample averaged 3.4 Ra against our 3.2\\nlimit, with two pieces at 3.6. It is a cosmetic-plus-fit concern on the race\\nseat, so I would not want it going into the BR90 build.\\n\\nL-2093 is allocated to production order 4820, which I believe starts Saturday.\\n\\nIngrid\\n\",\n        \"thread_id\": \"T-2093\"\n      }\n    ],\n    \"supplier_commitments\": []\n  }\n}\n\n## What could not be read\n\n[\n  {\n    \"system\": \"quality\",\n    \"collection\": \"lots\",\n    \"count\": 2,\n    \"reason\": \"hold attribution requires quality:hold:place\"\n  },\n  {\n    \"system\": \"mail\",\n    \"collection\": \"messages\",\n    \"count\": 7,\n    \"reason\": \"Priya Raghunathan (u-202) is not a party to these messages\"\n  }\n]\n\n## Advisory beliefs from earlier runs\n\n[]\n\n## Declared workflows you may enter\n\n[]\n\n## Individual tools you may propose\n\n[\n  {\n    \"name\": \"production.notify_supervisor\",\n    \"system\": \"production\",\n    \"description\": \"Send a production supervisor a message about a change affecting their line. This cannot be retracted once sent.\",\n    \"writes\": true,\n    \"parameters\": {\n      \"properties\": {\n        \"supervisor_id\": {\n          \"description\": \"The production supervisor to notify.\",\n          \"title\": \"Supervisor Id\",\n          \"type\": \"string\"\n        },\n        \"subject\": {\n          \"maxLength\": 200,\n          \"title\": \"Subject\",\n          \"type\": \"string\"\n        },\n        \"body\": {\n          \"maxLength\": 4000,\n          \"title\": \"Body\",\n          \"type\": \"string\"\n        },\n        \"about\": {\n          \"default\": \"\",\n          \"description\": \"Production order or PO this concerns.\",\n          \"title\": \"About\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"supervisor_id\",\n        \"subject\",\n        \"body\"\n      ],\n      \"title\": \"NotifySupervisorInput\",\n      \"type\": \"object\"\n    }\n  },\n  {\n    \"name\": \"purchasing.raise_shortage_flag\",\n    \"system\": \"purchasing\",\n    \"description\": \"Raise a material shortage with purchasing, for a part that cannot be covered from existing stock.\",\n    \"writes\": true,\n    \"parameters\": {\n      \"properties\": {\n        \"part_id\": {\n          \"title\": \"Part Id\",\n          \"type\": \"string\"\n        },\n        \"production_order_id\": {\n          \"title\": \"Production Order Id\",\n          \"type\": \"string\"\n        },\n        \"qty_short\": {\n          \"exclusiveMinimum\": 0,\n          \"title\": \"Qty Short\",\n          \"type\": \"integer\"\n        },\n        \"needed_by\": {\n          \"format\": \"date\",\n          \"title\": \"Needed By\",\n          \"type\": \"string\"\n        },\n        \"note\": {\n          \"default\": \"\",\n          \"title\": \"Note\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"part_id\",\n        \"production_order_id\",\n        \"qty_short\",\n        \"needed_by\"\n      ],\n      \"title\": \"RaiseShortageInput\",\n      \"type\": \"object\"\n    }\n  },\n  {\n    \"name\": \"purchasing.withdraw_shortage_flag\",\n    \"system\": \"purchasing\",\n    \"description\": \"Withdraw a shortage flag raised in error.\",\n    \"writes\": true,\n    \"parameters\": {\n      \"properties\": {\n        \"flag_id\": {\n          \"title\": \"Flag Id\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"flag_id\"\n      ],\n      \"title\": \"WithdrawShortageInput\",\n      \"type\": \"object\"\n    }\n  },\n  {\n    \"name\": \"quality.find_available_lots\",\n    \"system\": \"quality\",\n    \"description\": \"Released, unallocated lots of a part that are large enough to cover a requirement on their own.\",\n    \"writes\": false,\n    \"parameters\": {\n      \"properties\": {\n        \"part_id\": {\n          \"title\": \"Part Id\",\n          \"type\": \"string\"\n        },\n        \"min_qty\": {\n          \"default\": 0,\n          \"description\": \"Smallest usable lot size.\",\n          \"minimum\": 0,\n          \"title\": \"Min Qty\",\n          \"type\": \"integer\"\n        }\n      },\n      \"required\": [\n        \"part_id\"\n      ],\n      \"title\": \"FindLotsInput\",\n      \"type\": \"object\"\n    }\n  },\n  {\n    \"name\": \"quality.reallocate_lot\",\n    \"system\": \"quality\",\n    \"description\": \"Move a production order's allocation from one lot to another, releasing the first.\",\n    \"writes\": true,\n    \"parameters\": {\n      \"properties\": {\n        \"production_order_id\": {\n          \"title\": \"Production Order Id\",\n          \"type\": \"string\"\n        },\n        \"from_lot_id\": {\n          \"description\": \"The lot to release from the order.\",\n          \"title\": \"From Lot Id\",\n          \"type\": \"string\"\n        },\n        \"to_lot_id\": {\n          \"description\": \"The lot to allocate in its place.\",\n          \"title\": \"To Lot Id\",\n          \"type\": \"string\"\n        },\n        \"reason\": {\n          \"default\": \"\",\n          \"title\": \"Reason\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"production_order_id\",\n        \"from_lot_id\",\n        \"to_lot_id\"\n      ],\n      \"title\": \"ReallocateLotInput\",\n      \"type\": \"object\"\n    }\n  },\n  {\n    \"name\": \"quality.revert_lot_allocation\",\n    \"system\": \"quality\",\n    \"description\": \"Undo a reallocation, returning the order to its original lot.\",\n    \"writes\": true,\n    \"parameters\": {\n      \"properties\": {\n        \"production_order_id\": {\n          \"title\": \"Production Order Id\",\n          \"type\": \"string\"\n        },\n        \"from_lot_id\": {\n          \"title\": \"From Lot Id\",\n          \"type\": \"string\"\n        },\n        \"to_lot_id\": {\n          \"title\": \"To Lot Id\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"production_order_id\",\n        \"from_lot_id\",\n        \"to_lot_id\"\n      ],\n      \"title\": \"RevertAllocationInput\",\n      \"type\": \"object\"\n    }\n  },\n  {\n    \"name\": \"schedule.cancel_followup\",\n    \"system\": \"harmony\",\n    \"description\": \"Cancel a previously scheduled follow-up.\",\n    \"writes\": true,\n    \"parameters\": {\n      \"properties\": {\n        \"task_id\": {\n          \"title\": \"Task Id\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"task_id\"\n      ],\n      \"title\": \"CancelFollowUpInput\",\n      \"type\": \"object\"\n    }\n  },\n  {\n    \"name\": \"schedule.create_followup\",\n    \"system\": \"harmony\",\n    \"description\": \"Schedule a detector to run on a future date, re-entering the agent loop if it finds the condition still holds.\",\n    \"writes\": true,\n    \"parameters\": {\n      \"properties\": {\n        \"detector\": {\n          \"description\": \"Id of the detector to run when this fires.\",\n          \"title\": \"Detector\",\n          \"type\": \"string\"\n        },\n        \"fire_at\": {\n          \"description\": \"The date on which to run it.\",\n          \"format\": \"date\",\n          \"title\": \"Fire At\",\n          \"type\": \"string\"\n        },\n        \"reason\": {\n          \"default\": \"\",\n          \"description\": \"Why this check was scheduled.\",\n          \"title\": \"Reason\",\n          \"type\": \"string\"\n        },\n        \"payload\": {\n          \"additionalProperties\": true,\n          \"description\": \"Arguments for the detector, naming what specifically to re-check.\",\n          \"title\": \"Payload\",\n          \"type\": \"object\"\n        }\n      },\n      \"required\": [\n        \"detector\",\n        \"fire_at\"\n      ],\n      \"title\": \"CreateFollowUpInput\",\n      \"type\": \"object\"\n    }\n  }\n]\n\nRecommend the single best response.",
+    "system": "You are the reasoning step of an enterprise agent working on behalf of one named employee. You do not act. You propose, and a human decides.\n\nYour job: given something a detector noticed and the context that could be gathered about it, recommend the single best response.\n\nRules you must follow:\n\n1. Prefer a declared workflow when one fits. Workflows encode how this company has    decided the work must be done; entering one means the steps run in their declared    order whether or not you agree with the order. Supply its parameters accurately    and do not describe the steps as though you were choosing them.\n2. Use individual tool calls only when no declared workflow covers the situation.\n3. If nothing is warranted, say so with action_kind \"none\" and explain why. A false    alarm dismissed with a reason is a good outcome.\n4. Cite the specific records that led you to your conclusion. Refer to them by their    identifiers, exactly as they appear in the context.\n5. Some systems may have been unreadable for this user. If something you would want    to check was not available, say so in your reasoning rather than assuming what it    would have contained.\n6. Beliefs listed under \"remembered_beliefs\" are advisory background from earlier    runs, not current facts. They may inform how you weigh options. Never treat one    as evidence of the present state of a system.\n\nYour summary will be shown to a busy manager as the first and possibly only thing they read. One sentence: what is wrong, and what you propose to do."
+  },
+  "response": {
+    "input_tokens": 0,
+    "latency_ms": 0,
+    "model": "scripted-fixture",
+    "output": {
+      "action_kind": "tools",
+      "alternatives_considered": [
+        "Raise a shortage flag with purchasing \u2014 unnecessary while L-2101 covers the requirement in full.",
+        "Split the requirement across L-2088 and L-2101 \u2014 L-2088 is already committed to production order 4830."
+      ],
+      "evidence": [
+        {
+          "detail": "on hold since 2026-09-02, surface finish",
+          "ref": "L-2093",
+          "source": "quality"
+        },
+        {
+          "detail": "released, unallocated, 140 units",
+          "ref": "L-2101",
+          "source": "quality"
+        }
+      ],
+      "no_action_reason": null,
+      "reasoning": "4820 needs 90 units of P-1188 and is allocated to L-2093, which Ingrid placed on hold for surface finish 3.4 Ra against a 3.2 spec. L-2101 holds 140 released, unallocated units \u2014 enough on its own, so no shortage needs raising with purchasing and the build date is unaffected.",
+      "summary": "Lot L-2093 is on quality hold and allocated to production order 4820, which starts in three days. Lot L-2101 is released, unallocated and large enough to cover it. I can reallocate and tell the supervisor.",
+      "tool_calls": [
+        {
+          "params": {
+            "from_lot_id": "L-2093",
+            "production_order_id": "4820",
+            "reason": "L-2093 on quality hold for surface finish",
+            "to_lot_id": "L-2101"
+          },
+          "rationale": "Move 4820 onto released stock that covers it in full",
+          "tool": "quality.reallocate_lot"
+        },
+        {
+          "params": {
+            "about": "4820",
+            "body": "Production order 4820 has been reallocated from lot L-2093 to lot L-2101. L-2093 is on quality hold for surface finish (3.4 Ra against a 3.2 Ra specification). L-2101 is released and covers the full 90 units required. No change to the scheduled start on 2026-09-05.",
+            "subject": "Lot change for production order 4820",
+            "supervisor_id": "u-301"
+          },
+          "rationale": "The supervisor needs to know which lot the line will draw",
+          "tool": "production.notify_supervisor"
+        }
+      ],
+      "workflow_name": null,
+      "workflow_params": null
+    },
+    "output_tokens": 0,
+    "stop_reason": ""
+  },
+  "source": "fixture"
+}

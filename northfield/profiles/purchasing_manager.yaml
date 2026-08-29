@@ -1,0 +1,54 @@
+# The purchasing manager's agent.
+#
+# Every line here is a binding, not logic. What this agent watches, reads, may
+# propose and may enter is configuration; the loop that runs it is the same loop
+# that runs every other profile.
+
+id: purchasing_manager
+name: Purchasing Manager Agent
+description: >
+  Watches planned production against incoming supply and supplier correspondence,
+  and proposes reroutes when material will not arrive in time.
+
+assigned_to:
+  - u-101   # Dana Whitfield
+  - u-102   # Marcus Bell
+
+detectors:
+  - material_shortfall
+  - po_arrival_check   # targeted; fires from a scheduled follow-up, not a sweep
+
+# Read in this order. The mail provider runs after the ERP provider so that
+# extraction has the open purchase orders to constrain itself against.
+providers:
+  - erp
+  - mail
+  - calendar
+
+# Glob patterns, so a new ERP tool becomes available to this role without editing
+# the profile. The gate and the invoker still check scopes per call.
+tools:
+  - erp.*
+  - mail.send*
+  - production.notify_supervisor
+  - schedule.*
+
+# Purchasing declared that a reroute must follow fixed steps, so this agent enters
+# a declared workflow rather than assembling one.
+workflows:
+  - po_reroute
+
+# What this profile needs. Intersected with the user's own entitlements — never
+# added to them. Dana holds `mail:send` but this profile never asks for it, so her
+# agent cannot send mail on her behalf even though she can.
+scopes:
+  - erp:part:read
+  - erp:po:read
+  - erp:po:create
+  - erp:po:cancel
+  - erp:production:read
+  - erp:receipt:read
+  - mail:read
+  - calendar:read
+  - production:notify
+  - harmony:schedule:create

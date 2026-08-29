@@ -1,0 +1,48 @@
+# Calendars. Today is 2026-09-02.
+
+# The event that drives the escalation rule: Dana is out tomorrow, so an approval
+# she has not answered by end of today routes to Marcus.
+- event_id: E-001
+  owner: u-101
+  start: '2026-09-03T00:00:00'
+  end: '2026-09-03T23:59:59'
+  title: Out of office — supplier site visit, Kestrel (Sheffield)
+  attendees: []
+  out_of_office: true
+
+# NOISE — a normal meeting today. Being busy is not being absent, and a rule that
+# confused the two would escalate approvals away from people who are at their desk.
+- event_id: E-002
+  owner: u-101
+  start: '2026-09-02T10:00:00'
+  end: '2026-09-02T11:00:00'
+  title: Supplier scorecard review
+  attendees: [u-100, u-102]
+  out_of_office: false
+
+# Marcus is in. He is the backup, so this matters.
+- event_id: E-003
+  owner: u-102
+  start: '2026-09-03T09:00:00'
+  end: '2026-09-03T09:30:00'
+  title: Buying team stand-up
+  attendees: [u-101]
+  out_of_office: false
+
+- event_id: E-004
+  owner: u-202
+  start: '2026-09-02T13:00:00'
+  end: '2026-09-02T14:00:00'
+  title: Incoming inspection review
+  attendees: [u-203]
+  out_of_office: false
+
+# NOISE — Dana is also out much later in the month. A rule that asked "is she ever
+# out?" rather than "is she out tomorrow?" would find this.
+- event_id: E-005
+  owner: u-101
+  start: '2026-09-21T00:00:00'
+  end: '2026-09-25T23:59:59'
+  title: Out of office — annual leave
+  attendees: []
+  out_of_office: true

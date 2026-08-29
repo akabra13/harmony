@@ -1,0 +1,12 @@
+.venv/
+.harmony/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+*.db
+*.db-wal
+*.db-shm
+.env
+.DS_Store

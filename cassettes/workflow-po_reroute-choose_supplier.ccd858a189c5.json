@@ -1,0 +1,42 @@
+{
+  "call_site": "workflow.po_reroute.choose_supplier",
+  "key": "ccd858a189c543218e0260501b76ac1a9e771a36249007d45c91653e9cf4b750",
+  "request": {
+    "output_schema": {
+      "properties": {
+        "justification": {
+          "description": "Two sentences on why this supplier over the alternatives.",
+          "maxLength": 400,
+          "title": "Justification",
+          "type": "string"
+        },
+        "supplier_id": {
+          "const": "S-Z",
+          "description": "The supplier to order from.",
+          "title": "Supplier Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "supplier_id",
+        "justification"
+      ],
+      "title": "po_reroute_v3_choose_supplier_output",
+      "type": "object"
+    },
+    "prompt": "Part: P-4471\nQuantity: 400\nMust be on site by: 2026-09-07\nReplacing purchase order: PO-77812\nThis supports production order: 4812\n\nQualified suppliers who can deliver in time:\n[{'supplier_id': 'S-Z', 'name': 'Meridian Drives', 'lead_time_days': 2, 'unit_price': 46.5, 'on_time_rate': 0.94}]\n\nProjected arrival dates by supplier:\n{'S-Z': '2026-09-04'}\n",
+    "system": "You are choosing a replacement supplier inside a fixed procurement workflow. Every option you are given is already approved for this part and can deliver in time; you are not checking those things again. Weigh unit price against delivery reliability, and remember that this order exists because a line is about to stop \u2014 the cheapest option is not automatically the right one when a supplier's on-time record is poor. Justify your choice in two sentences.\n"
+  },
+  "response": {
+    "input_tokens": 0,
+    "latency_ms": 0,
+    "model": "scripted-fixture",
+    "output": {
+      "justification": "Meridian delivers in two days against a five-day window and has a 94% on-time record, the best of the qualified suppliers. Halstead is \u00a35.50 cheaper per unit but its nine-day lead time misses the production start entirely, so price is not the deciding factor here.",
+      "supplier_id": "S-Z"
+    },
+    "output_tokens": 0,
+    "stop_reason": ""
+  },
+  "source": "fixture"
+}

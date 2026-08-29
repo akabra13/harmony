@@ -1,0 +1,12 @@
+# Goods receipts.
+#
+# Only the historic order has one. PO-77812 has no receipt, which is exactly what
+# the Tuesday arrival check will discover — and what makes the follow-up a real
+# observation rather than a scripted second act.
+
+- receipt_id: GR-5501
+  po_id: PO-77755
+  part_id: P-4471
+  qty: 250
+  received_date: '2026-08-14'
+  received_by: u-301

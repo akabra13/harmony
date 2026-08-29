@@ -1,0 +1,42 @@
+{
+  "call_site": "workflow.po_reroute.draft_notification",
+  "key": "761564148dd1164158166820d0c07be394f1fac8dfc5af584d46d41241f97fe5",
+  "request": {
+    "output_schema": {
+      "properties": {
+        "body": {
+          "description": "",
+          "maxLength": 1500,
+          "title": "Body",
+          "type": "string"
+        },
+        "subject": {
+          "description": "",
+          "maxLength": 120,
+          "title": "Subject",
+          "type": "string"
+        }
+      },
+      "required": [
+        "subject",
+        "body"
+      ],
+      "title": "po_reroute_v3_draft_notification_output",
+      "type": "object"
+    },
+    "prompt": "Production order affected: 4812\nPart: P-4471, quantity 400\nOriginal purchase order, now cancelled: PO-77812\nReplacement purchase order: PO-44244\nNew supplier: S-Z\nExpected on site: 2026-09-04\nRequired on site by: 2026-09-07\n",
+    "system": "You are drafting an internal message from a purchasing manager to a production supervisor. Be brief and factual. State what changed, which supplier is now supplying, and when the goods are expected. Do not apologise, do not speculate about causes, and do not make commitments beyond the dates you have been given.\n"
+  },
+  "response": {
+    "input_tokens": 0,
+    "latency_ms": 0,
+    "model": "scripted-fixture",
+    "output": {
+      "body": "Production order 4812 is affected by a supplier delay on P-4471.\n\nPO-77812 has been cancelled and replaced by PO-44244 with supplier S-Z. The material is expected on site on 2026-09-04, ahead of the scheduled start.\n\nNo change to the production schedule is needed. Raised automatically and approved by purchasing.",
+      "subject": "Supply change affecting production order 4812"
+    },
+    "output_tokens": 0,
+    "stop_reason": ""
+  },
+  "source": "fixture"
+}

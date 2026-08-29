@@ -1,0 +1,204 @@
+{
+  "call_site": "planner",
+  "key": "e93862b9273e6616165f7592dde2b79212234179daa0762627d600a42eebbe1e",
+  "request": {
+    "output_schema": {
+      "$defs": {
+        "ActionKind": {
+          "enum": [
+            "workflow",
+            "tools",
+            "none"
+          ],
+          "title": "ActionKind",
+          "type": "string"
+        },
+        "EvidenceRef": {
+          "description": "A citation from the proposal back into what the agent saw.",
+          "properties": {
+            "detail": {
+              "default": "",
+              "title": "Detail",
+              "type": "string"
+            },
+            "ref": {
+              "title": "Ref",
+              "type": "string"
+            },
+            "source": {
+              "title": "Source",
+              "type": "string"
+            }
+          },
+          "required": [
+            "source",
+            "ref"
+          ],
+          "title": "EvidenceRef",
+          "type": "object"
+        },
+        "PlannedCall": {
+          "description": "One tool call as the model proposes it.",
+          "properties": {
+            "params": {
+              "additionalProperties": true,
+              "title": "Params",
+              "type": "object"
+            },
+            "rationale": {
+              "default": "",
+              "title": "Rationale",
+              "type": "string"
+            },
+            "tool": {
+              "title": "Tool",
+              "type": "string"
+            }
+          },
+          "required": [
+            "tool"
+          ],
+          "title": "PlannedCall",
+          "type": "object"
+        }
+      },
+      "description": "The schema the planner model is required to fill in.\n\nFlat rather than a discriminated union: tool-use schemas are more reliably\nfilled when the branch is an enum field and the branches are separate optional\nobjects. :meth:`to_proposal` converts to the typed union and rejects\ninconsistent combinations, so the looseness stops at this boundary.",
+      "properties": {
+        "action_kind": {
+          "$ref": "#/$defs/ActionKind",
+          "description": "'workflow' to enter a declared workflow, 'tools' to propose individual tool calls, 'none' if no action is warranted."
+        },
+        "alternatives_considered": {
+          "description": "Options you weighed and set aside, and why.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Alternatives Considered",
+          "type": "array"
+        },
+        "evidence": {
+          "description": "Records that justify this, cited by id.",
+          "items": {
+            "$ref": "#/$defs/EvidenceRef"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "no_action_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Required when action_kind is 'none'.",
+          "title": "No Action Reason"
+        },
+        "reasoning": {
+          "description": "Why you concluded this, referring to specific records you were shown.",
+          "title": "Reasoning",
+          "type": "string"
+        },
+        "summary": {
+          "description": "One sentence for the human: the problem and what you propose.",
+          "title": "Summary",
+          "type": "string"
+        },
+        "tool_calls": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/PlannedCall"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Required when action_kind is 'tools'.",
+          "title": "Tool Calls"
+        },
+        "workflow_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Required when action_kind is 'workflow'.",
+          "title": "Workflow Name"
+        },
+        "workflow_params": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Parameters for the workflow, matching its declared schema.",
+          "title": "Workflow Params"
+        }
+      },
+      "required": [
+        "summary",
+        "reasoning",
+        "action_kind"
+      ],
+      "title": "PlannerOutput",
+      "type": "object"
+    },
+    "prompt": "## Who you are acting for\n\nDana Whitfield, Purchasing Manager (id: u-101).\nToday is 2026-09-02.\n\n## What was noticed\n\n{\n  \"detector\": \"material_shortfall\",\n  \"title\": \"P-5540 shortfall will delay production order 4816\",\n  \"severity\": \"high\",\n  \"subjects\": [\n    {\n      \"kind\": \"part\",\n      \"id\": \"P-5540\"\n    },\n    {\n      \"kind\": \"production_order\",\n      \"id\": \"4816\"\n    },\n    {\n      \"kind\": \"purchase_order\",\n      \"id\": \"PO-77820\"\n    }\n  ],\n  \"findings\": {\n    \"production_order\": {\n      \"id\": \"4816\",\n      \"product\": \"PRD-SV400 Servo Gantry\",\n      \"line\": \"Line 3\",\n      \"scheduled_start\": \"2026-09-08\",\n      \"supervisor_id\": \"u-301\"\n    },\n    \"part\": {\n      \"id\": \"P-5540\",\n      \"description\": \"Servo drive assembly, 15kW\",\n      \"unit_cost\": 890.0\n    },\n    \"projection\": {\n      \"part_id\": \"P-5540\",\n      \"required_qty\": 30,\n      \"on_hand_today\": 12,\n      \"daily_usage\": 3.0,\n      \"days_until_start\": 6,\n      \"baseline_consumption_before_start\": 18,\n      \"arriving_in_time\": [],\n      \"arriving_after_start\": [\n        {\n          \"po_id\": \"PO-77820\",\n          \"supplier_id\": \"S-Y\",\n          \"qty\": 40,\n          \"promised_date\": \"2026-09-05\",\n          \"effective_arrival\": \"2026-09-11\",\n          \"revised_by_supplier\": true\n        }\n      ],\n      \"incoming_qty_in_time\": 0,\n      \"projected_on_hand\": -6,\n      \"shortfall_qty\": 36,\n      \"days_of_cover\": 4.0\n    }\n  },\n  \"evidence\": [\n    {\n      \"source\": \"erp\",\n      \"ref\": \"4816\",\n      \"detail\": \"PRD-SV400 Servo Gantry on Line 3 starts 2026-09-08 and needs 30 of P-5540\"\n    },\n    {\n      \"source\": \"erp\",\n      \"ref\": \"P-5540\",\n      \"detail\": \"12 on hand, 3.0/day, 4.0 days of cover; projected -6 at start\"\n    },\n    {\n      \"source\": \"mail\",\n      \"ref\": \"M-008\",\n      \"detail\": \"PO-77820 (40 units from S-Y) now expected 2026-09-11, after the 2026-09-08 start\",\n      \"quote\": \"We are now looking at the 11th rather than the 5th.\"\n    }\n  ]\n}\n\n## Context gathered\n\n{\n  \"erp\": {\n    \"parts\": [\n      {\n        \"part_id\": \"P-5540\",\n        \"description\": \"Servo drive assembly, 15kW\",\n        \"on_hand\": 12,\n        \"daily_usage\": 3.0,\n        \"safety_stock\": 4,\n        \"unit_cost\": 890.0,\n        \"lot_tracked\": false\n      }\n    ],\n    \"suppliers\": [\n      {\n        \"supplier_id\": \"S-Q\",\n        \"name\": \"Apex Rapid Supply\",\n        \"contact_email\": \"deals@apexrapid.example\",\n        \"approved\": true,\n        \"approved_parts\": [\n          \"P-9002\"\n        ],\n        \"lead_time_days\": 1,\n        \"pricing\": {\n          \"P-4471\": 38.0\n        },\n        \"on_time_rate\": 0.71\n      },\n      {\n        \"supplier_id\": \"S-T\",\n        \"name\": \"Voss Antriebe GmbH\",\n        \"contact_email\": \"vertrieb@voss-antriebe.example\",\n        \"approved\": true,\n        \"approved_parts\": [\n          \"P-5540\"\n        ],\n        \"lead_time_days\": 3,\n        \"pricing\": {\n          \"P-5540\": 940.0\n        },\n        \"on_time_rate\": 0.91\n      },\n      {\n        \"supplier_id\": \"S-V\",\n        \"name\": \"Northwind Materials\",\n        \"contact_email\": \"sales@northwindmaterials.example\",\n        \"approved\": true,\n        \"approved_parts\": [\n          \"P-1188\"\n        ],\n        \"lead_time_days\": 4,\n        \"pricing\": {\n          \"P-1188\": 19.4\n        },\n        \"on_time_rate\": 0.85\n      },\n      {\n        \"supplier_id\": \"S-W\",\n        \"name\": \"Halstead Precision\",\n        \"contact_email\": \"orders@halsteadprecision.example\",\n        \"approved\": true,\n        \"approved_parts\": [\n          \"P-4471\",\n          \"P-1188\"\n        ],\n        \"lead_time_days\": 9,\n        \"pricing\": {\n          \"P-4471\": 41.0,\n          \"P-1188\": 18.2\n        },\n        \"on_time_rate\": 0.88\n      },\n      {\n        \"supplier_id\": \"S-Y\",\n        \"name\": \"Kestrel Components\",\n        \"contact_email\": \"rita.alvarez@kestrelcomponents.example\",\n        \"approved\": true,\n        \"approved_parts\": [\n          \"P-4471\",\n          \"P-2218\",\n          \"P-5540\"\n        ],\n        \"lead_time_days\": 6,\n        \"pricing\": {\n          \"P-4471\": 42.0,\n          \"P-2218\": 12.5,\n          \"P-5540\": 890.0\n        },\n        \"on_time_rate\": 0.62\n      },\n      {\n        \"supplier_id\": \"S-Z\",\n        \"name\": \"Meridian Drives\",\n        \"contact_email\": \"sales@meridiandrives.example\",\n        \"approved\": true,\n        \"approved_parts\": [\n          \"P-4471\",\n          \"P-3390\"\n        ],\n        \"lead_time_days\": 2,\n        \"pricing\": {\n          \"P-4471\": 46.5,\n          \"P-3390\": 156.0\n        },\n        \"on_time_rate\": 0.94\n      }\n    ],\n    \"purchase_orders\": [\n      {\n        \"po_id\": \"PO-77820\",\n        \"part_id\": \"P-5540\",\n        \"supplier_id\": \"S-Y\",\n        \"qty\": 40,\n        \"unit_price\": 890.0,\n        \"total_value\": 35600.0,\n        \"ordered_date\": \"2026-08-28\",\n        \"promised_date\": \"2026-09-05\",\n        \"status\": \"open\",\n        \"created_by\": \"u-101\",\n        \"notes\": null,\n        \"replaces_po\": null\n      }\n    ],\n    \"production_orders\": [\n      {\n        \"prod_order_id\": \"4816\",\n        \"product\": \"PRD-SV400 Servo Gantry\",\n        \"qty\": 6,\n        \"scheduled_start\": \"2026-09-08\",\n        \"scheduled_end\": \"2026-09-14\",\n        \"status\": \"planned\",\n        \"line\": \"Line 3\",\n        \"supervisor_id\": \"u-301\",\n        \"components\": [\n          {\n            \"part_id\": \"P-5540\",\n            \"qty\": 30\n          }\n        ]\n      }\n    ],\n    \"goods_receipts\": []\n  },\n  \"mail\": {\n    \"messages\": [\n      {\n        \"message_id\": \"M-008\",\n        \"direction\": \"inbound\",\n        \"from_addr\": \"rita.alvarez@kestrelcomponents.example\",\n        \"to_addrs\": [\n          \"dana.whitfield@northfield-mfg.example\"\n        ],\n        \"date\": \"2026-09-01T17:05:00\",\n        \"subject\": \"PO-77820 \\u2014 revised schedule\",\n        \"body\": \"Dana,\\n\\nSame winding line issue affects the servo drives on PO-77820. We are now\\nlooking at the 11th rather than the 5th. I am sorry to be sending you two of\\nthese in one afternoon.\\n\\nRita\\n\",\n        \"thread_id\": \"T-77820\"\n      },\n      {\n        \"message_id\": \"M-001\",\n        \"direction\": \"inbound\",\n        \"from_addr\": \"rita.alvarez@kestrelcomponents.example\",\n        \"to_addrs\": [\n          \"dana.whitfield@northfield-mfg.example\",\n          \"alex.mercer@northfield-mfg.example\"\n        ],\n        \"date\": \"2026-09-01T16:42:00\",\n        \"subject\": \"Re: PO-77812 shipment update\",\n        \"body\": \"Dana,\\n\\nApologies for the short notice. Our winding line went down on Friday and we\\nare still working through the backlog, so PO-77812 will not make the 4th as\\npromised. Revised ship date is Monday 9/7, which puts it on your dock Tuesday\\n9/8. The full 400 units will ship together; we are not splitting the order.\\n\\nI know that is tight against your build schedule. If it helps, we can look at\\npartial air freight for a portion of the quantity, though I would need to come\\nback to you on cost.\\n\\nRita Alvarez\\nKestrel Components\\n\",\n        \"thread_id\": \"T-77812\"\n      },\n      {\n        \"message_id\": \"M-004\",\n        \"direction\": \"inbound\",\n        \"from_addr\": \"tom.vasquez@northfield-mfg.example\",\n        \"to_addrs\": [\n          \"dana.whitfield@northfield-mfg.example\",\n          \"grace.okonkwo@northfield-mfg.example\"\n        ],\n        \"date\": \"2026-09-01T14:20:00\",\n        \"subject\": \"Moving Thursday's line review to 15:00\",\n        \"body\": \"Shifting the Line 2 review an hour later this week \\u2014 the maintenance window\\nran over. Same room.\\n\",\n        \"thread_id\": null\n      },\n      {\n        \"message_id\": \"M-005\",\n        \"direction\": \"inbound\",\n        \"from_addr\": \"deals@apexrapid.example\",\n        \"to_addrs\": [\n          \"dana.whitfield@northfield-mfg.example\"\n        ],\n        \"date\": \"2026-09-01T11:03:00\",\n        \"subject\": \"NEMA 23 steppers \\u2014 next-day, $38.00/unit\",\n        \"body\": \"Hi Dana,\\n\\nWe hold NEMA 23 2.8A steppers in stock in Leeds and can ship next day at\\n$38.00 per unit for quantities over 250 \\u2014 well under what you are paying\\nelsewhere. Happy to set you up on account this week.\\n\\nApex Rapid Supply\\n\",\n        \"thread_id\": null\n      },\n      {\n        \"message_id\": \"M-002\",\n        \"direction\": \"inbound\",\n        \"from_addr\": \"newsletter@manufacturingweekly.example\",\n        \"to_addrs\": [\n          \"dana.whitfield@northfield-mfg.example\"\n        ],\n        \"date\": \"2026-09-01T06:00:00\",\n        \"subject\": \"Manufacturing Weekly \\u2014 reshoring, tariffs, and the Q4 outlook\",\n        \"body\": \"This week: three plants that brought production home, what the new tariff\\nschedule means for your bill of materials, and our Q4 capacity survey.\\n\",\n        \"thread_id\": null\n      },\n      {\n        \"message_id\": \"M-003\",\n        \"direction\": \"inbound\",\n        \"from_addr\": \"rita.alvarez@kestrelcomponents.example\",\n        \"to_addrs\": [\n          \"dana.whitfield@northfield-mfg.example\"\n        ],\n        \"date\": \"2026-08-31T09:15:00\",\n        \"subject\": \"PO-77790 \\u2014 on track\",\n        \"body\": \"Morning Dana,\\n\\nQuick confirmation that PO-77790 left us Friday and is on schedule to reach\\nyou on the 1st as promised. Tracking attached.\\n\\nRita\\n\",\n        \"thread_id\": \"T-77790\"\n      }\n    ],\n    \"supplier_commitments\": [\n      {\n        \"po_id\": \"PO-77820\",\n        \"revised_arrival_date\": \"2026-09-11\",\n        \"confidence\": 0.92,\n        \"source_message_id\": \"M-008\",\n        \"verbatim_quote\": \"We are now looking at the 11th rather than the 5th.\"\n      }\n    ]\n  },\n  \"calendar\": {\n    \"events\": [\n      {\n        \"event_id\": \"E-002\",\n        \"owner\": \"u-101\",\n        \"start\": \"2026-09-02T10:00:00\",\n        \"end\": \"2026-09-02T11:00:00\",\n        \"title\": \"Supplier scorecard review\",\n        \"attendees\": [\n          \"u-100\",\n          \"u-102\"\n        ],\n        \"out_of_office\": false\n      },\n      {\n        \"event_id\": \"E-001\",\n        \"owner\": \"u-101\",\n        \"start\": \"2026-09-03T00:00:00\",\n        \"end\": \"2026-09-03T23:59:59\",\n        \"title\": \"Out of office \\u2014 supplier site visit, Kestrel (Sheffield)\",\n        \"attendees\": [],\n        \"out_of_office\": true\n      },\n      {\n        \"event_id\": \"E-005\",\n        \"owner\": \"u-101\",\n        \"start\": \"2026-09-21T00:00:00\",\n        \"end\": \"2026-09-25T23:59:59\",\n        \"title\": \"Out of office \\u2014 annual leave\",\n        \"attendees\": [],\n        \"out_of_office\": true\n      }\n    ]\n  }\n}\n\n## What could not be read\n\n[\n  {\n    \"system\": \"mail\",\n    \"collection\": \"messages\",\n    \"count\": 2,\n    \"reason\": \"Dana Whitfield (u-101) is not a party to these messages\"\n  }\n]\n\n## Advisory beliefs from earlier runs\n\n[]\n\n## Declared workflows you may enter\n\n[\n  {\n    \"workflow\": \"po_reroute\",\n    \"version\": 3,\n    \"description\": \"Replace an at-risk purchase order with one from an alternate approved supplier who can deliver before production starts, then tell production and schedule a check that the goods actually arrive.\\n\",\n    \"parameters\": {\n      \"properties\": {\n        \"at_risk_po_id\": {\n          \"description\": \"The purchase order that will not arrive in time.\",\n          \"title\": \"At Risk Po Id\",\n          \"type\": \"string\"\n        },\n        \"part_id\": {\n          \"description\": \"The part being sourced.\",\n          \"title\": \"Part Id\",\n          \"type\": \"string\"\n        },\n        \"production_order_id\": {\n          \"description\": \"The production order at risk.\",\n          \"title\": \"Production Order Id\",\n          \"type\": \"string\"\n        },\n        \"required_on_site_by\": {\n          \"description\": \"The date the goods must be on site \\u2014 the production start date.\",\n          \"format\": \"date\",\n          \"title\": \"Required On Site By\",\n          \"type\": \"string\"\n        },\n        \"qty\": {\n          \"description\": \"Quantity to order from the replacement supplier.\",\n          \"title\": \"Qty\",\n          \"type\": \"integer\"\n        },\n        \"supervisor_id\": {\n          \"description\": \"The production supervisor to notify.\",\n          \"title\": \"Supervisor Id\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"at_risk_po_id\",\n        \"part_id\",\n        \"production_order_id\",\n        \"required_on_site_by\",\n        \"qty\",\n        \"supervisor_id\"\n      ],\n      \"title\": \"po_reroute_v3_params\",\n      \"type\": \"object\"\n    },\n    \"steps_that_will_run\": [\n      {\n        \"id\": \"find_approved_suppliers\",\n        \"description\": \"Find suppliers qualified to supply this part\"\n      },\n      {\n        \"id\": \"filter_by_lead_time\",\n        \"description\": \"Keep only suppliers who can deliver before production starts\"\n      },\n      {\n        \"id\": \"choose_supplier\",\n        \"description\": \"Choose among the qualified, in-time suppliers and justify the choice\"\n      },\n      {\n        \"id\": \"create_replacement_po\",\n        \"description\": \"Raise the replacement purchase order\"\n      },\n      {\n        \"id\": \"reduce_original_po\",\n        \"description\": \"Cancel the original purchase order now that it is replaced\"\n      },\n      {\n        \"id\": \"draft_notification\",\n        \"description\": \"Draft the message to the production supervisor\"\n      },\n      {\n        \"id\": \"notify_production\",\n        \"description\": \"Tell the production supervisor\"\n      },\n      {\n        \"id\": \"schedule_arrival_check\",\n        \"description\": \"Schedule a check that the replacement shipment actually arrives\"\n      }\n    ]\n  }\n]\n\n## Individual tools you may propose\n\n[\n  {\n    \"name\": \"erp.cancel_or_reduce_purchase_order\",\n    \"system\": \"erp\",\n    \"description\": \"Reduce an open purchase order's quantity, or cancel it entirely when the new quantity is zero. Returns the previous state so the change can be undone.\",\n    \"writes\": true,\n    \"parameters\": {\n      \"properties\": {\n        \"po_id\": {\n          \"title\": \"Po Id\",\n          \"type\": \"string\"\n        },\n        \"new_qty\": {\n          \"description\": \"Zero cancels the order outright.\",\n          \"minimum\": 0,\n          \"title\": \"New Qty\",\n          \"type\": \"integer\"\n        },\n        \"reason\": {\n          \"default\": \"\",\n          \"title\": \"Reason\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"po_id\",\n        \"new_qty\"\n      ],\n      \"title\": \"ReducePOInput\",\n      \"type\": \"object\"\n    }\n  },\n  {\n    \"name\": \"erp.cancel_purchase_order\",\n    \"system\": \"erp\",\n    \"description\": \"Cancel an open purchase order outright.\",\n    \"writes\": true,\n    \"parameters\": {\n      \"properties\": {\n        \"po_id\": {\n          \"title\": \"Po Id\",\n          \"type\": \"string\"\n        },\n        \"reason\": {\n          \"default\": \"\",\n          \"title\": \"Reason\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"po_id\"\n      ],\n      \"title\": \"CancelPOInput\",\n      \"type\": \"object\"\n    }\n  },\n  {\n    \"name\": \"erp.create_purchase_order\",\n    \"system\": \"erp\",\n    \"description\": \"Raise a new purchase order with a supplier.\",\n    \"writes\": true,\n    \"parameters\": {\n      \"properties\": {\n        \"part_id\": {\n          \"title\": \"Part Id\",\n          \"type\": \"string\"\n        },\n        \"supplier_id\": {\n          \"title\": \"Supplier Id\",\n          \"type\": \"string\"\n        },\n        \"qty\": {\n          \"exclusiveMinimum\": 0,\n          \"title\": \"Qty\",\n          \"type\": \"integer\"\n        },\n        \"need_by\": {\n          \"format\": \"date\",\n          \"title\": \"Need By\",\n          \"type\": \"string\"\n        },\n        \"replaces_po\": {\n          \"anyOf\": [\n            {\n              \"type\": \"string\"\n            },\n            {\n              \"type\": \"null\"\n            }\n          ],\n          \"default\": null,\n          \"title\": \"Replaces Po\"\n        },\n        \"reason\": {\n          \"default\": \"\",\n          \"title\": \"Reason\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"part_id\",\n        \"supplier_id\",\n        \"qty\",\n        \"need_by\"\n      ],\n      \"title\": \"CreatePOInput\",\n      \"type\": \"object\"\n    }\n  },\n  {\n    \"name\": \"erp.filter_suppliers_by_lead_time\",\n    \"system\": \"erp\",\n    \"description\": \"Narrow a list of suppliers to those whose lead time gets goods on site by a required date.\",\n    \"writes\": false,\n    \"parameters\": {\n      \"$defs\": {\n        \"SupplierCandidate\": {\n          \"properties\": {\n            \"supplier_id\": {\n              \"title\": \"Supplier Id\",\n              \"type\": \"string\"\n            },\n            \"name\": {\n              \"title\": \"Name\",\n              \"type\": \"string\"\n            },\n            \"lead_time_days\": {\n              \"title\": \"Lead Time Days\",\n              \"type\": \"integer\"\n            },\n            \"unit_price\": {\n              \"anyOf\": [\n                {\n                  \"type\": \"number\"\n                },\n                {\n                  \"type\": \"null\"\n                }\n              ],\n              \"default\": null,\n              \"title\": \"Unit Price\"\n            },\n            \"on_time_rate\": {\n              \"title\": \"On Time Rate\",\n              \"type\": \"number\"\n            }\n          },\n          \"required\": [\n            \"supplier_id\",\n            \"name\",\n            \"lead_time_days\",\n            \"on_time_rate\"\n          ],\n          \"title\": \"SupplierCandidate\",\n          \"type\": \"object\"\n        }\n      },\n      \"properties\": {\n        \"candidates\": {\n          \"description\": \"Suppliers to filter, from the approved-supplier step.\",\n          \"items\": {\n            \"$ref\": \"#/$defs/SupplierCandidate\"\n          },\n          \"title\": \"Candidates\",\n          \"type\": \"array\"\n        },\n        \"need_by\": {\n          \"description\": \"The date the goods must be on site.\",\n          \"format\": \"date\",\n          \"title\": \"Need By\",\n          \"type\": \"string\"\n        },\n        \"as_of\": {\n          \"description\": \"The date an order would be placed.\",\n          \"format\": \"date\",\n          \"title\": \"As Of\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"candidates\",\n        \"need_by\",\n        \"as_of\"\n      ],\n      \"title\": \"LeadTimeFilterInput\",\n      \"type\": \"object\"\n    }\n  },\n  {\n    \"name\": \"erp.list_approved_suppliers_for_part\",\n    \"system\": \"erp\",\n    \"description\": \"Suppliers qualified to supply a specific part. A supplier being approved as a vendor is not sufficient; the part must be on their qualification list.\",\n    \"writes\": false,\n    \"parameters\": {\n      \"properties\": {\n        \"part_id\": {\n          \"description\": \"The part to find qualified suppliers for.\",\n          \"title\": \"Part Id\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"part_id\"\n      ],\n      \"title\": \"ApprovedSuppliersInput\",\n      \"type\": \"object\"\n    }\n  },\n  {\n    \"name\": \"erp.record_goods_receipt\",\n    \"system\": \"erp\",\n    \"description\": \"Record that goods against a purchase order arrived.\",\n    \"writes\": true,\n    \"parameters\": {\n      \"properties\": {\n        \"po_id\": {\n          \"title\": \"Po Id\",\n          \"type\": \"string\"\n        },\n        \"qty\": {\n          \"exclusiveMinimum\": 0,\n          \"title\": \"Qty\",\n          \"type\": \"integer\"\n        }\n      },\n      \"required\": [\n        \"po_id\",\n        \"qty\"\n      ],\n      \"title\": \"RecordReceiptInput\",\n      \"type\": \"object\"\n    }\n  },\n  {\n    \"name\": \"erp.restore_purchase_order\",\n    \"system\": \"erp\",\n    \"description\": \"Restore a purchase order's previous status and quantity.\",\n    \"writes\": true,\n    \"parameters\": {\n      \"properties\": {\n        \"po_id\": {\n          \"title\": \"Po Id\",\n          \"type\": \"string\"\n        },\n        \"status\": {\n          \"description\": \"The status to restore.\",\n          \"title\": \"Status\",\n          \"type\": \"string\"\n        },\n        \"qty\": {\n          \"description\": \"The quantity to restore.\",\n          \"exclusiveMinimum\": 0,\n          \"title\": \"Qty\",\n          \"type\": \"integer\"\n        }\n      },\n      \"required\": [\n        \"po_id\",\n        \"status\",\n        \"qty\"\n      ],\n      \"title\": \"RestorePOInput\",\n      \"type\": \"object\"\n    }\n  },\n  {\n    \"name\": \"production.notify_supervisor\",\n    \"system\": \"production\",\n    \"description\": \"Send a production supervisor a message about a change affecting their line. This cannot be retracted once sent.\",\n    \"writes\": true,\n    \"parameters\": {\n      \"properties\": {\n        \"supervisor_id\": {\n          \"description\": \"The production supervisor to notify.\",\n          \"title\": \"Supervisor Id\",\n          \"type\": \"string\"\n        },\n        \"subject\": {\n          \"maxLength\": 200,\n          \"title\": \"Subject\",\n          \"type\": \"string\"\n        },\n        \"body\": {\n          \"maxLength\": 4000,\n          \"title\": \"Body\",\n          \"type\": \"string\"\n        },\n        \"about\": {\n          \"default\": \"\",\n          \"description\": \"Production order or PO this concerns.\",\n          \"title\": \"About\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"supervisor_id\",\n        \"subject\",\n        \"body\"\n      ],\n      \"title\": \"NotifySupervisorInput\",\n      \"type\": \"object\"\n    }\n  },\n  {\n    \"name\": \"schedule.cancel_followup\",\n    \"system\": \"harmony\",\n    \"description\": \"Cancel a previously scheduled follow-up.\",\n    \"writes\": true,\n    \"parameters\": {\n      \"properties\": {\n        \"task_id\": {\n          \"title\": \"Task Id\",\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\n        \"task_id\"\n      ],\n      \"title\": \"CancelFollowUpInput\",\n      \"type\": \"object\"\n    }\n  },\n  {\n    \"name\": \"schedule.create_followup\",\n    \"system\": \"harmony\",\n    \"description\": \"Schedule a detector to run on a future date, re-entering the agent loop if it finds the condition still holds.\",\n    \"writes\": true,\n    \"parameters\": {\n      \"properties\": {\n        \"detector\": {\n          \"description\": \"Id of the detector to run when this fires.\",\n          \"title\": \"Detector\",\n          \"type\": \"string\"\n        },\n        \"fire_at\": {\n          \"description\": \"The date on which to run it.\",\n          \"format\": \"date\",\n          \"title\": \"Fire At\",\n          \"type\": \"string\"\n        },\n        \"reason\": {\n          \"default\": \"\",\n          \"description\": \"Why this check was scheduled.\",\n          \"title\": \"Reason\",\n          \"type\": \"string\"\n        },\n        \"payload\": {\n          \"additionalProperties\": true,\n          \"description\": \"Arguments for the detector, naming what specifically to re-check.\",\n          \"title\": \"Payload\",\n          \"type\": \"object\"\n        }\n      },\n      \"required\": [\n        \"detector\",\n        \"fire_at\"\n      ],\n      \"title\": \"CreateFollowUpInput\",\n      \"type\": \"object\"\n    }\n  }\n]\n\nRecommend the single best response.",
+    "system": "You are the reasoning step of an enterprise agent working on behalf of one named employee. You do not act. You propose, and a human decides.\n\nYour job: given something a detector noticed and the context that could be gathered about it, recommend the single best response.\n\nRules you must follow:\n\n1. Prefer a declared workflow when one fits. Workflows encode how this company has    decided the work must be done; entering one means the steps run in their declared    order whether or not you agree with the order. Supply its parameters accurately    and do not describe the steps as though you were choosing them.\n2. Use individual tool calls only when no declared workflow covers the situation.\n3. If nothing is warranted, say so with action_kind \"none\" and explain why. A false    alarm dismissed with a reason is a good outcome.\n4. Cite the specific records that led you to your conclusion. Refer to them by their    identifiers, exactly as they appear in the context.\n5. Some systems may have been unreadable for this user. If something you would want    to check was not available, say so in your reasoning rather than assuming what it    would have contained.\n6. Beliefs listed under \"remembered_beliefs\" are advisory background from earlier    runs, not current facts. They may inform how you weigh options. Never treat one    as evidence of the present state of a system.\n\nYour summary will be shown to a busy manager as the first and possibly only thing they read. One sentence: what is wrong, and what you propose to do."
+  },
+  "response": {
+    "input_tokens": 0,
+    "latency_ms": 0,
+    "model": "scripted-fixture",
+    "output": {
+      "action_kind": "workflow",
+      "alternatives_considered": [
+        "Partial shipment from Kestrel \u2014 they have not offered one and the winding line is the constraint."
+      ],
+      "evidence": [
+        {
+          "detail": "PO-77820 slips to 2026-09-11",
+          "ref": "M-008",
+          "source": "mail"
+        },
+        {
+          "detail": "starts 2026-09-08, needs 30",
+          "ref": "4816",
+          "source": "erp"
+        }
+      ],
+      "no_action_reason": null,
+      "reasoning": "4816 starts 09-08 and needs 30 of P-5540. Only 12 are on hand against 3/day usage, and Kestrel's message M-008 moves PO-77820 to 09-11. Voss is qualified for this part with a three-day lead time.",
+      "summary": "Servo drives for production order 4816 will not arrive in time \u2014 PO-77820 has slipped to 2026-09-11, three days after the build starts. I can reroute to Voss Antriebe, who can deliver by the 8th.",
+      "tool_calls": null,
+      "workflow_name": "po_reroute",
+      "workflow_params": {
+        "at_risk_po_id": "PO-77820",
+        "part_id": "P-5540",
+        "production_order_id": "4816",
+        "qty": 40,
+        "required_on_site_by": "2026-09-08",
+        "supervisor_id": "u-301"
+      }
+    },
+    "output_tokens": 0,
+    "stop_reason": ""
+  },
+  "source": "fixture"
+}

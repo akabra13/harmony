@@ -1,0 +1,55 @@
+# Parts. `on_hand / daily_usage` is the days of cover the shortfall detector
+# computes; nothing here states it, because a stored derived value is a value that
+# can be wrong.
+
+# Scenario A's part. 150 / 30 = 5 days of cover from 2026-09-02, so stock runs out
+# on 2026-09-07 — the day production order 4812 is scheduled to start.
+- part_id: P-4471
+  description: Stepper motor, NEMA 23, 2.8A
+  on_hand: 150
+  daily_usage: 30
+  safety_stock: 20
+  unit_cost: 42.00
+  lot_tracked: false
+
+# Also consumed by 4812, and comfortably covered. Present so the detector has to
+# distinguish between components of the same order rather than alarming on all of them.
+- part_id: P-2218
+  description: Drive coupling, 12mm bore
+  on_hand: 400
+  daily_usage: 15
+  safety_stock: 50
+  unit_cost: 12.50
+  lot_tracked: false
+
+# Scenario B's part: lot-tracked, so availability is a question about lots rather
+# than about a single on-hand number.
+- part_id: P-1188
+  description: Bearing race, hardened, 45mm
+  on_hand: 280
+  daily_usage: 20
+  safety_stock: 60
+  unit_cost: 18.75
+  lot_tracked: true
+
+# NOISE — below safety stock (48 < 60) but with PO-77801 arriving 2026-09-03,
+# well before the order that needs it. A detector that alarmed on "below safety
+# stock" would raise this; one that projects supply against demand does not.
+- part_id: P-3390
+  description: Control board, 4-axis
+  on_hand: 48
+  daily_usage: 6
+  safety_stock: 60
+  unit_cost: 156.00
+  lot_tracked: false
+
+# High-value part behind the approval-escalation case. 12 / 3 = 4 days of cover.
+# A replacement order runs to roughly £37,600, above Dana's £25,000 limit, so the
+# same workflow routes to her director instead of to her.
+- part_id: P-5540
+  description: Servo drive assembly, 15kW
+  on_hand: 12
+  daily_usage: 3
+  safety_stock: 4
+  unit_cost: 890.00
+  lot_tracked: false

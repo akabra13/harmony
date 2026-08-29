@@ -1,0 +1,85 @@
+# Production orders. Today is 2026-09-02.
+
+# Scenario A's order. Starts 09-07, needs 120 of P-4471, and stock runs out on
+# 09-07. Kestrel's revised date of 09-08 misses it by a day.
+- prod_order_id: '4812'
+  product: PRD-CX200 Conveyor Drive Unit
+  qty: 10
+  scheduled_start: '2026-09-07'
+  scheduled_end: '2026-09-10'
+  status: planned
+  line: Line 2
+  supervisor_id: u-301
+  components:
+    - part_id: P-4471
+      qty: 120
+    - part_id: P-2218
+      qty: 30
+
+# Scenario B's order. Starts in three days and is allocated lot L-2093, which
+# quality has just put on hold.
+- prod_order_id: '4820'
+  product: PRD-BR90 Bearing Housing Assembly
+  qty: 30
+  scheduled_start: '2026-09-05'
+  scheduled_end: '2026-09-08'
+  status: planned
+  line: Line 1
+  supervisor_id: u-301
+  components:
+    - part_id: P-1188
+      qty: 90
+
+# NOISE — also consumes P-4471, but starts on 09-25, long after the replacement
+# order would land. A detector that flagged every order consuming a short part
+# would raise this one too. This one should stay quiet.
+- prod_order_id: '4835'
+  product: PRD-CX200 Conveyor Drive Unit
+  qty: 5
+  scheduled_start: '2026-09-25'
+  scheduled_end: '2026-09-28'
+  status: planned
+  line: Line 2
+  supervisor_id: u-301
+  components:
+    - part_id: P-4471
+      qty: 60
+
+# NOISE — already running, and its material was consumed days ago.
+- prod_order_id: '4808'
+  product: PRD-CX180 Conveyor Drive Unit
+  qty: 8
+  scheduled_start: '2026-08-31'
+  scheduled_end: '2026-09-03'
+  status: in_progress
+  line: Line 2
+  supervisor_id: u-301
+  components:
+    - part_id: P-2218
+      qty: 24
+
+# The high-value case: needs P-5540 on 09-08, and PO-77820 has slipped to 09-11.
+- prod_order_id: '4816'
+  product: PRD-SV400 Servo Gantry
+  qty: 6
+  scheduled_start: '2026-09-08'
+  scheduled_end: '2026-09-14'
+  status: planned
+  line: Line 3
+  supervisor_id: u-301
+  components:
+    - part_id: P-5540
+      qty: 30
+
+# NOISE — allocated a different lot of P-1188, and unaffected by the hold.
+- prod_order_id: '4830'
+  product: PRD-BR90 Bearing Housing Assembly
+  qty: 12
+  scheduled_start: '2026-09-16'
+  scheduled_end: '2026-09-18'
+  status: planned
+  line: Line 1
+  supervisor_id: u-301
+  components:
+    - part_id: P-1188
+      qty: 36

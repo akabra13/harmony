@@ -1,0 +1,58 @@
+# Lot-tracked inventory for P-1188, and one lot of a different part as noise.
+
+# Scenario B's trigger: on hold, and allocated to an order that starts in 3 days.
+- lot_id: L-2093
+  part_id: P-1188
+  qty: 100
+  status: hold
+  received_date: '2026-08-28'
+  allocated_to: ['4820']
+  hold_reason: Surface finish 3.4 Ra against a 3.2 Ra specification
+  hold_placed_by: u-202
+  hold_placed_on: '2026-09-02'
+
+# The lot that can cover: released, unallocated, and large enough on its own
+# (140 available against the 90 that 4820 needs).
+- lot_id: L-2101
+  part_id: P-1188
+  qty: 140
+  status: released
+  received_date: '2026-08-30'
+  allocated_to: []
+  hold_reason: null
+  hold_placed_by: null
+  hold_placed_on: null
+
+# NOISE — released, but already committed to production order 4830 and too small
+# to cover 4820 alone. A search that only filtered on status would return it.
+- lot_id: L-2088
+  part_id: P-1188
+  qty: 40
+  status: released
+  received_date: '2026-08-22'
+  allocated_to: ['4830']
+  hold_reason: null
+  hold_placed_by: null
+  hold_placed_on: null
+
+# NOISE — plenty of stock, wrong part.
+- lot_id: L-2077
+  part_id: P-1190
+  qty: 500
+  status: released
+  received_date: '2026-08-18'
+  allocated_to: []
+  hold_reason: null
+  hold_placed_by: null
+  hold_placed_on: null
+
+# NOISE — right part, but scrapped. Must not be treated as available.
+- lot_id: L-2065
+  part_id: P-1188
+  qty: 75
+  status: scrapped
+  received_date: '2026-08-10'
+  allocated_to: []
+  hold_reason: Dimensional failure at incoming inspection
+  hold_placed_by: u-203
+  hold_placed_on: '2026-08-12'

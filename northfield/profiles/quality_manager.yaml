@@ -1,0 +1,51 @@
+# The quality manager's agent — Scenario B.
+#
+# Compare this file with purchasing_manager.yaml. Different detectors, a different
+# system, a different toolset, a different person, and — the point — **no
+# workflows**, so this agent plans freely. Two agents with materially different
+# behaviour, and the difference is entirely here.
+#
+# Adding this profile is the whole of what Scenario B required from the harness:
+# no change to the orchestrator, the planner, the gate or the audit layer.
+
+id: quality_manager
+name: Quality Manager Agent
+description: >
+  Watches lot-tracked material on quality hold against imminent production, and
+  proposes either a reallocation from good stock or a shortage flag to purchasing.
+
+assigned_to:
+  - u-202   # Priya Raghunathan
+
+detectors:
+  - lot_hold_allocation_risk
+
+providers:
+  - quality
+  - erp
+  - mail
+
+tools:
+  - quality.*
+  - purchasing.raise_shortage_flag
+  - purchasing.withdraw_shortage_flag
+  - production.notify_supervisor
+  - schedule.*
+
+# Empty. There is no declared workflow for a lot reallocation, so this agent runs
+# the free-form path — which keeps both paths exercised, and which the executor's
+# docstring is honest about being the weaker of the two.
+workflows: []
+
+# Notably absent: erp:po:create. Priya can tell purchasing there is a shortage;
+# she cannot place the order herself, and neither can her agent.
+scopes:
+  - erp:part:read
+  - erp:po:read
+  - erp:production:read
+  - quality:lot:read
+  - quality:lot:allocate
+  - mail:read
+  - production:notify
+  - purchasing:shortage:flag
+  - harmony:schedule:create

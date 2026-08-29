@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "harmony-agent"
+version = "0.1.0"
+description = "An extendable agent harness for enterprise work"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.6",
+    "anthropic>=0.39",
+    "typer>=0.12",
+    "rich>=13.7",
+    "pyyaml>=6.0",
+    "python-dateutil>=2.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+]
+
+[project.scripts]
+harmony = "harmony.cli.main:app"
+
+# Deployments register themselves here. The kernel discovers what is installed
+# rather than importing a company package by name; see harmony/runtime/discovery.py
+# and tests/architecture/test_kernel_purity.py.
+[project.entry-points."harmony.deployments"]
+northfield = "northfield:DEPLOYMENT"
+
+[tool.setuptools.packages.find]
+include = ["harmony*", "northfield*"]
+
+[tool.setuptools.package-data]
+northfield = ["seed/*.yaml", "profiles/*.yaml", "workflows/*.yaml", "*.yaml"]
+harmony = ["plan/prompts/*.md", "workflow/prompts/*.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+markers = [
+    "integration: end-to-end tests that run a full agent loop",
+    "architecture: tests that enforce structural invariants of the codebase",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

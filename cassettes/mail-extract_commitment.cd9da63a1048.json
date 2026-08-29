@@ -1,0 +1,84 @@
+{
+  "call_site": "mail.extract_commitment",
+  "key": "cd9da63a104807c9675bda99bf9db8c5db8128b39774850fce97dbe4f90b69ef",
+  "request": {
+    "output_schema": {
+      "description": "What a supplier said about when something will arrive.",
+      "properties": {
+        "confidence": {
+          "default": 0.0,
+          "description": "0 to 1: how certain the message makes this.",
+          "title": "Confidence",
+          "type": "number"
+        },
+        "po_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The purchase order affected. Must be one of those listed.",
+          "title": "Po Id"
+        },
+        "revised_arrival_date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "When the goods will reach our site, as an ISO date.",
+          "title": "Revised Arrival Date"
+        },
+        "revises_delivery": {
+          "description": "True only if this message changes a delivery date for a listed PO.",
+          "title": "Revises Delivery",
+          "type": "boolean"
+        },
+        "verbatim_quote": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The exact sentence the date came from.",
+          "title": "Verbatim Quote"
+        }
+      },
+      "required": [
+        "revises_delivery"
+      ],
+      "title": "SupplierCommitment",
+      "type": "object"
+    },
+    "prompt": "## Open purchase orders this message could concern\n\n[\n  {\n    \"po_id\": \"PO-77812\",\n    \"part_id\": \"P-4471\",\n    \"supplier_id\": \"S-Y\",\n    \"promised_date\": \"2026-09-04\"\n  }\n]\n\n## Message\n\nFrom: rita.alvarez@kestrelcomponents.example\nDate: 2026-09-01T16:42:00\nSubject: Re: PO-77812 shipment update\n\nDana,\n\nApologies for the short notice. Our winding line went down on Friday and we\nare still working through the backlog, so PO-77812 will not make the 4th as\npromised. Revised ship date is Monday 9/7, which puts it on your dock Tuesday\n9/8. The full 400 units will ship together; we are not splitting the order.\n\nI know that is tight against your build schedule. If it helps, we can look at\npartial air freight for a portion of the quantity, though I would need to come\nback to you on cost.\n\nRita Alvarez\nKestrel Components\n",
+    "system": "You extract delivery commitments from supplier correspondence. You do not judge whether a delay matters, you do not recommend anything, and you do not perform calculations. Read the message and report what the supplier committed to.\n\nIf the message revises a delivery date for one of the listed purchase orders, report that order's id and the revised arrival date at our site. Watch the distinction between a ship date and an arrival date: if the sender gives both, the arrival date is the one we need.\n\nIf the message confirms an existing date, revises nothing, or concerns no listed purchase order, set revises_delivery to false and leave the other fields empty. Confirming that a shipment is on schedule is not a revision.\n\nQuote the exact sentence your date came from, verbatim."
+  },
+  "response": {
+    "input_tokens": 0,
+    "latency_ms": 0,
+    "model": "scripted-fixture",
+    "output": {
+      "confidence": 0.95,
+      "po_id": "PO-77812",
+      "revised_arrival_date": "2026-09-08",
+      "revises_delivery": true,
+      "verbatim_quote": "Revised ship date is Monday 9/7, which puts it on your dock Tuesday 9/8."
+    },
+    "output_tokens": 0,
+    "stop_reason": ""
+  },
+  "source": "fixture"
+}

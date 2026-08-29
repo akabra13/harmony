@@ -1,0 +1,235 @@
+# Reroute an at-risk purchase order to an alternate approved supplier.
+#
+# Purchasing's requirement, verbatim:
+#
+#   "We don't want the AI improvising a PO reroute. The steps are fixed: confirm
+#    the alternate supplier is approved for the part → confirm their lead time
+#    meets the production date → create the new PO → cancel or reduce the old one
+#    → notify production → schedule the arrival check. In that order. Every time."
+#
+# That order is reproduced below and the engine walks it by index. The planner
+# decides *whether* to enter this workflow and supplies its parameters; it cannot
+# reorder, skip or add a step, and it never sees this file.
+#
+# ---------------------------------------------------------------------------
+# Two things to notice, both deliberate:
+#
+# 1. THE STEPS ARE ORDERED BY REVERSIBILITY AS WELL AS BY BUSINESS LOGIC.
+#    Every compensable write (create, then reduce) comes before the one
+#    irreversible effect (notifying the supervisor). A failure at any point before
+#    step 7 rolls back cleanly. The same six business steps in the order
+#    "notify first, buy second" would leave a supervisor acting on a purchase order
+#    that does not exist. Rollback safety is a property of the ordering, not only
+#    of the compensations.
+#
+# 2. THE TWO MODEL STEPS ARE BOUNDED BY THEIR NEIGHBOURS.
+#    `choose_supplier` looks like the model making a purchasing decision. It is
+#    not: step 1 computed who is qualified, step 2 removed anyone too slow, and
+#    `enum_from` restricts the answer to what survived. The model picks among
+#    options code produced and writes down why. `draft_notification` writes prose
+#    and is required to mention the facts it is about.
+#
+#    Neither may write. The loader rejects an llm step that names a tool.
+# ---------------------------------------------------------------------------
+
+name: po_reroute
+version: 3
+description: >
+  Replace an at-risk purchase order with one from an alternate approved supplier
+  who can deliver before production starts, then tell production and schedule a
+  check that the goods actually arrive.
+
+params:
+  at_risk_po_id:
+    type: string
+    description: The purchase order that will not arrive in time.
+  part_id:
+    type: string
+    description: The part being sourced.
+  production_order_id:
+    type: string
+    description: The production order at risk.
+  required_on_site_by:
+    type: date
+    description: The date the goods must be on site — the production start date.
+  qty:
+    type: integer
+    description: Quantity to order from the replacement supplier.
+  supervisor_id:
+    type: string
+    description: The production supervisor to notify.
+
+steps:
+  # 1 — "confirm the alternate supplier is approved for the part"
+  #
+  # `on_empty: fail` is what makes this a confirmation rather than a lookup. No
+  # qualified supplier means there is no reroute to make, and the workflow stops
+  # instead of proceeding to invent one.
+  - id: find_approved_suppliers
+    kind: tool
+    description: Find suppliers qualified to supply this part
+    tool: erp.list_approved_suppliers_for_part
+    input:
+      part_id: ${params.part_id}
+    on_empty: fail
+    empty_check: supplier_ids
+
+  # 2 — "confirm their lead time meets the production date"
+  #
+  # Arithmetic in a tool, not in a prompt. Halstead Precision is qualified and
+  # cheaper than Meridian; a nine-day lead time is what removes them, and it is
+  # removed here where the reasoning is auditable.
+  - id: filter_by_lead_time
+    kind: tool
+    description: Keep only suppliers who can deliver before production starts
+    tool: erp.filter_suppliers_by_lead_time
+    input:
+      candidates: ${steps.find_approved_suppliers.output.suppliers}
+      need_by: ${params.required_on_site_by}
+      as_of: ${clock.today}
+    on_empty: fail
+    empty_check: supplier_ids
+
+  # 3 — the first bounded model step.
+  #
+  # `enum_from` points at step 2's output, so the permitted answers are computed
+  # at run time from data. A supplier outside that list fails the guardrail, is
+  # audited as a rejection, is retried once, and then fails the workflow closed.
+  - id: choose_supplier
+    kind: llm
+    description: Choose among the qualified, in-time suppliers and justify the choice
+    system: >
+      You are choosing a replacement supplier inside a fixed procurement workflow.
+      Every option you are given is already approved for this part and can deliver
+      in time; you are not checking those things again. Weigh unit price against
+      delivery reliability, and remember that this order exists because a line is
+      about to stop — the cheapest option is not automatically the right one when
+      a supplier's on-time record is poor. Justify your choice in two sentences.
+    prompt: |
+      Part: ${params.part_id}
+      Quantity: ${params.qty}
+      Must be on site by: ${params.required_on_site_by}
+      Replacing purchase order: ${params.at_risk_po_id}
+      This supports production order: ${params.production_order_id}
+
+      Qualified suppliers who can deliver in time:
+      ${steps.filter_by_lead_time.output.suppliers}
+
+      Projected arrival dates by supplier:
+      ${steps.filter_by_lead_time.output.arrival_dates}
+    output_schema:
+      supplier_id:
+        type: string
+        enum_from: steps.filter_by_lead_time.output.supplier_ids
+        description: The supplier to order from.
+      justification:
+        type: string
+        max_length: 400
+        description: Two sentences on why this supplier over the alternatives.
+
+  # 4 — first write. Compensable: if anything later fails, this order is cancelled.
+  - id: create_replacement_po
+    kind: tool
+    description: Raise the replacement purchase order
+    tool: erp.create_purchase_order
+    input:
+      part_id: ${params.part_id}
+      supplier_id: ${steps.choose_supplier.output.supplier_id}
+      qty: ${params.qty}
+      need_by: ${params.required_on_site_by}
+      replaces_po: ${params.at_risk_po_id}
+      reason: ${steps.choose_supplier.output.justification}
+    compensation:
+      tool: erp.cancel_purchase_order
+      input:
+        po_id: ${steps.create_replacement_po.output.po_id}
+        reason: compensating a failed reroute
+
+  # 5 — "cancel or reduce the old one".
+  #
+  # The tool returns the previous status and quantity, and the compensation binds
+  # to them. A rollback that had to guess what it was restoring would not be one.
+  - id: reduce_original_po
+    kind: tool
+    description: Cancel the original purchase order now that it is replaced
+    tool: erp.cancel_or_reduce_purchase_order
+    input:
+      po_id: ${params.at_risk_po_id}
+      new_qty: 0
+      reason: replaced by ${steps.create_replacement_po.output.po_id}
+    compensation:
+      tool: erp.restore_purchase_order
+      input:
+        po_id: ${params.at_risk_po_id}
+        status: ${steps.reduce_original_po.output.previous_status}
+        qty: ${steps.reduce_original_po.output.previous_qty}
+
+  # 6 — the second bounded model step. Writes prose; writes nothing else.
+  #
+  # `must_mention` forces the drafted message to name the production order and the
+  # new purchase order. A notification about "a supply change" that never says
+  # which one is not a notification.
+  - id: draft_notification
+    kind: llm
+    description: Draft the message to the production supervisor
+    system: >
+      You are drafting an internal message from a purchasing manager to a
+      production supervisor. Be brief and factual. State what changed, which
+      supplier is now supplying, and when the goods are expected. Do not apologise,
+      do not speculate about causes, and do not make commitments beyond the dates
+      you have been given.
+    prompt: |
+      Production order affected: ${params.production_order_id}
+      Part: ${params.part_id}, quantity ${params.qty}
+      Original purchase order, now cancelled: ${params.at_risk_po_id}
+      Replacement purchase order: ${steps.create_replacement_po.output.po_id}
+      New supplier: ${steps.choose_supplier.output.supplier_id}
+      Expected on site: ${steps.create_replacement_po.output.promised_date}
+      Required on site by: ${params.required_on_site_by}
+    output_schema:
+      subject:
+        type: string
+        max_length: 120
+      body:
+        type: string
+        max_length: 1500
+    must_mention:
+      - ${params.production_order_id}
+      - ${steps.create_replacement_po.output.po_id}
+
+  # 7 — the only irreversible effect, and therefore last among the effects.
+  #
+  # `irreversible: true` rather than a missing compensation. The loader rejects a
+  # write that declares neither, so rollback is always a decision somebody made.
+  - id: notify_production
+    kind: tool
+    description: Tell the production supervisor
+    tool: production.notify_supervisor
+    irreversible: true
+    input:
+      supervisor_id: ${params.supervisor_id}
+      subject: ${steps.draft_notification.output.subject}
+      body: ${steps.draft_notification.output.body}
+      about: ${params.production_order_id}
+
+  # 8 — "schedule the arrival check".
+  #
+  # The follow-up is a targeted detector invocation on the replacement order's
+  # promised date. It is compensable, so a rolled-back reroute does not leave a
+  # check scheduled for a purchase order that no longer exists.
+  - id: schedule_arrival_check
+    kind: tool
+    description: Schedule a check that the replacement shipment actually arrives
+    tool: schedule.create_followup
+    input:
+      detector: po_arrival_check
+      fire_at: ${steps.create_replacement_po.output.promised_date}
+      reason: confirm the replacement for ${params.at_risk_po_id} arrived as promised
+      payload:
+        po_id: ${steps.create_replacement_po.output.po_id}
+        production_order_id: ${params.production_order_id}
+        expected_by: ${steps.create_replacement_po.output.promised_date}
+    compensation:
+      tool: schedule.cancel_followup
+      input:
+        task_id: ${steps.schedule_arrival_check.output.task_id}

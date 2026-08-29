@@ -1,0 +1,45 @@
+# The production planner's agent.
+#
+# Alex sees exactly the same shortfall Dana does — same detector, same data, same
+# attention item — and cannot do anything about it. His profile never asks for
+# erp:po:create, and he does not hold it.
+#
+# This profile exists to make the scope-denial failure case a real permission
+# boundary rather than a staged one: the run reaches the gate, the gate denies the
+# plan whole, nothing is written, and the audit names the rule and the missing
+# scope. See `make demo-failures`.
+
+id: production_planner
+name: Production Planner Agent
+description: >
+  Watches planned production for material risk. Can see problems; cannot buy the
+  way out of them.
+
+assigned_to:
+  - u-303   # Alex Mercer
+
+detectors:
+  - material_shortfall
+
+providers:
+  - erp
+  - mail
+  - calendar
+
+tools:
+  - erp.list_approved_suppliers_for_part
+  - erp.filter_suppliers_by_lead_time
+  - erp.create_purchase_order      # offered by pattern, denied by scope
+  - production.notify_supervisor
+  - schedule.*
+
+workflows:
+  - po_reroute
+
+scopes:
+  - erp:part:read
+  - erp:po:read
+  - erp:production:read
+  - mail:read
+  - calendar:read
+  - harmony:schedule:create

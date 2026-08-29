@@ -1,0 +1,5 @@
+[console_scripts]
+harmony = harmony.cli.main:app
+
+[harmony.deployments]
+northfield = northfield:DEPLOYMENT

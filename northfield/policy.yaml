@@ -1,0 +1,43 @@
+# Northfield's policy configuration.
+#
+# Thresholds and switches, not logic. The rules that read these live in
+# northfield/rules.py, because a policy is a decision and a rule is a program, and
+# pushing the program into YAML would mean inventing a worse language to write it
+# in. See the README on where the config/code line falls and why.
+
+approval:
+  # Which key on a user's approval_limits the purchase-order threshold rule reads.
+  po_value_limit_key: po_create_max_value
+
+  # Where an over-limit decision goes. `manager` follows the reporting line from
+  # the directory rather than naming a person, so the policy survives a promotion.
+  escalate_to: manager
+
+  # An approval unanswered by this point is re-examined: if the approver is away
+  # the next day, it routes to their designated backup.
+  deadline: end_of_day
+
+supplier:
+  # A supplier must be both an approved vendor and qualified for the specific part.
+  # Enforced twice on the free-form path (gate rule, then the create tool) and
+  # structurally on the workflow path (the qualified-supplier step never offers an
+  # unqualified one).
+  enforce_part_qualification: true
+
+detection:
+  # How far ahead the shortfall detector looks. A stand-in for multi-level MRP
+  # netting — MODEL.md says what a real planning run would do instead.
+  material_shortfall_horizon_days: 14
+  lot_hold_horizon_days: 10
+
+# The non-human identity that runs detectors while people are asleep, and checks
+# free/busy when routing an approval nobody answered.
+#
+# Read and enqueue. No writes, no exceptions: every change to a system of record in
+# this deployment traces to a named employee who approved it. DESIGN.md argues this
+# is the hardest boundary to hold in a real deployment and the most important.
+system_principal:
+  id: system:harmony
+  scopes:
+    - calendar:freebusy:read
+    - harmony:schedule:create

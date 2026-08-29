@@ -1,0 +1,129 @@
+# Northfield Manufacturing — people, and what each is entitled to do.
+#
+# Scopes are the source of truth for permission. Note what is absent as much as
+# what is present: Priya (quality) cannot create purchase orders, and Alex
+# (production planning) cannot either — which is what makes the scope-denial
+# failure case a real permission boundary rather than a staged one.
+
+- user_id: u-100
+  name: Grace Okonkwo
+  email: grace.okonkwo@northfield-mfg.example
+  role: Director of Operations
+  manager_id: null
+  backup_approver_id: null
+  scopes:
+    - erp:part:read
+    - erp:po:read
+    - erp:production:read
+    - mail:read
+    - calendar:read
+  approval_limits:
+    po_create_max_value: 250000
+
+- user_id: u-101
+  name: Dana Whitfield
+  email: dana.whitfield@northfield-mfg.example
+  role: Purchasing Manager
+  manager_id: u-100
+  backup_approver_id: u-102
+  scopes:
+    - erp:part:read
+    - erp:po:read
+    - erp:po:create
+    - erp:po:cancel
+    - erp:production:read
+    - erp:receipt:read
+    - mail:read
+    - mail:send
+    - calendar:read
+    - production:notify
+    - harmony:schedule:create
+  approval_limits:
+    po_create_max_value: 25000
+
+# Dana's designated backup. The end-of-day escalation routes here when she is out.
+- user_id: u-102
+  name: Marcus Bell
+  email: marcus.bell@northfield-mfg.example
+  role: Senior Buyer
+  manager_id: u-100
+  backup_approver_id: null
+  scopes:
+    - erp:part:read
+    - erp:po:read
+    - erp:po:create
+    - erp:po:cancel
+    - erp:production:read
+    - erp:receipt:read
+    - mail:read
+    - mail:send
+    - calendar:read
+    - production:notify
+    - harmony:schedule:create
+  approval_limits:
+    po_create_max_value: 15000
+
+- user_id: u-202
+  name: Priya Raghunathan
+  email: priya.raghunathan@northfield-mfg.example
+  role: Quality Manager
+  manager_id: u-100
+  backup_approver_id: u-203
+  scopes:
+    - erp:part:read
+    - erp:production:read
+    - erp:po:read
+    - quality:lot:read
+    - quality:lot:allocate
+    - quality:hold:place
+    - mail:read
+    - mail:send
+    - calendar:read
+    - production:notify
+    - purchasing:shortage:flag
+    - harmony:schedule:create
+  approval_limits:
+    lot_reallocation_max_qty: 500
+
+- user_id: u-203
+  name: Ingrid Sørensen
+  email: ingrid.sorensen@northfield-mfg.example
+  role: Quality Engineer
+  manager_id: u-202
+  backup_approver_id: null
+  scopes:
+    - erp:part:read
+    - quality:lot:read
+    - mail:read
+    - calendar:read
+  approval_limits: {}
+
+- user_id: u-301
+  name: Tom Vasquez
+  email: tom.vasquez@northfield-mfg.example
+  role: Production Supervisor, Line 2
+  manager_id: u-100
+  backup_approver_id: null
+  scopes:
+    - erp:part:read
+    - erp:production:read
+    - mail:read
+    - calendar:read
+  approval_limits: {}
+
+# Alex triggers the same detector as Dana but cannot act on what it finds.
+# The gate denies the plan whole, before anything runs. See the failure suite.
+- user_id: u-303
+  name: Alex Mercer
+  email: alex.mercer@northfield-mfg.example
+  role: Production Planner
+  manager_id: u-100
+  backup_approver_id: null
+  scopes:
+    - erp:part:read
+    - erp:po:read
+    - erp:production:read
+    - mail:read
+    - calendar:read
+    - harmony:schedule:create
+  approval_limits: {}
