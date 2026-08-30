@@ -34,6 +34,7 @@ from northfield.systems import calendar, erp, mail, quality
 def run_scenario_a(
     console: Console, *, db_path: str | None = None, auto_approve: bool = True, llm=None
 ):
+    """A purchase-order reroute, through the declared workflow."""
     harness = fresh_harness(db_path, llm=llm)
     orchestrator = Orchestrator(harness)
     store = harness.store

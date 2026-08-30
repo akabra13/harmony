@@ -30,6 +30,7 @@ from northfield.systems import erp, quality
 
 
 def run_scenario_b(console: Console, *, db_path: str | None = None, llm=None):
+    """A quality hold reallocated, through the free-form planner."""
     harness = fresh_harness(db_path, llm=llm)
     orchestrator = Orchestrator(harness)
     store = harness.store

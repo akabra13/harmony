@@ -1,6 +1,11 @@
-# Harmony — an extendable agent harness for enterprise work.
+# Convenience wrapper. `make` is optional and not the documented path — a reviewer
+# on Windows does not have it, and a headline command that works on two platforms
+# out of three is not one command. Everything here is a shortcut for something the
+# `harmony` console script already does:
 #
-# `make demo` is the one documented command. Everything else is a shortcut.
+#     pip install -e ".[dev]"     then     harmony demo all
+#
+# Every target runs in replay mode: no API key, no cost, no network.
 
 PYTHON ?= python
 VENV   ?= .venv
@@ -10,26 +15,24 @@ BIN     = $(VENV)/Scripts
 endif
 
 PY      = $(BIN)/python
-DEMO_DB = .harmony/demo.db
+HARMONY = $(PY) -m harmony.cli.main
 
-# The demo replays recorded model exchanges: no API key, no cost, and the same
-# result every time. Set HARMONY_LLM=live to call the model for real.
 export PYTHONIOENCODING = utf-8
 export HARMONY_LLM     ?= replay
 
 .PHONY: help install demo demo-a demo-b demo-failures test test-fast \
-        lint cassettes record recorded-run clean check
+        eval eval-live cassettes record recorded-run serve clean
 
 help:
 	@echo "make install       create a virtualenv and install the package"
-	@echo "make demo          Scenario A, Scenario B, then the failure suite"
+	@echo "make demo          every scenario, in order  (= harmony demo all)"
 	@echo "make demo-a        Scenario A only — detect, approve, execute, follow up"
 	@echo "make demo-b        Scenario B only — the free-form path"
 	@echo "make demo-failures the eight failure cases"
 	@echo "make test          the whole suite, including architecture tests"
-	@echo "make check         tests + the structural claims the README makes"
-	@echo "make eval          check recommendation quality against golden cases"
+	@echo "make eval          recommendation quality against the golden cases"
 	@echo "make eval-live     the same cases against the real model (needs a key)"
+	@echo "make serve         the approval surface over HTTP"
 	@echo "make cassettes     regenerate cassettes from the scripted fixtures"
 	@echo "make record        regenerate cassettes from a LIVE model (needs a key)"
 	@echo "make recorded-run  write docs/runs/scenario-a.md from the audit log"
@@ -38,22 +41,23 @@ install:
 	$(PYTHON) -m venv $(VENV)
 	$(PY) -m pip install --quiet --upgrade pip
 	$(PY) -m pip install --quiet -e ".[dev]"
-	@echo "installed. now run: make demo"
+	@echo "installed. now run: make demo   (or: $(BIN)/harmony demo all)"
 
 # --- the demos -----------------------------------------------------------------
 
-demo: demo-a demo-b demo-failures
+demo:
+	$(HARMONY) demo all
 
 demo-a:
-	$(PY) -m harmony.cli.main demo run scenario-a --db $(DEMO_DB)
+	$(HARMONY) demo run scenario-a
 
 demo-b:
-	$(PY) -m harmony.cli.main demo run scenario-b --db $(DEMO_DB)
+	$(HARMONY) demo run scenario-b
 
 demo-failures:
-	$(PY) -m harmony.cli.main demo run failures --db $(DEMO_DB)
+	$(HARMONY) demo run failures
 
-# --- tests ---------------------------------------------------------------------
+# --- tests and evaluation ------------------------------------------------------
 
 test:
 	$(PY) -m pytest
@@ -61,25 +65,18 @@ test:
 test-fast:
 	$(PY) -m pytest -m "not integration"
 
-# The claims the README makes, checked rather than asserted.
-check: test
-	@echo
-	@echo "--- the kernel knows nothing about manufacturing ---"
-	@! grep -rIl --include=*.py -E "\b(purchase_order|supplier|part_id|northfield)\b" harmony/ \
-	  || (echo "FAIL: domain vocabulary in the kernel" && exit 1)
-	@echo "ok — no domain vocabulary in harmony/"
-	@echo
-	@echo "--- the audit chain verifies ---"
-	@$(PY) -m harmony.cli.main audit verify --db $(DEMO_DB) 2>/dev/null \
-	  || echo "(run make demo first)"
-
-# --- evaluation ----------------------------------------------------------------
-
 eval:
-	$(PY) -m harmony.cli.main eval
+	$(HARMONY) eval
 
 eval-live:
-	HARMONY_LLM=live $(PY) -m harmony.cli.main eval --live --verbose
+	HARMONY_LLM=live $(HARMONY) eval --live --verbose
+
+# --- serving -------------------------------------------------------------------
+
+serve:
+	$(HARMONY) init --db .harmony/serve.db --force
+	$(HARMONY) run --user u-101 --db .harmony/serve.db
+	$(HARMONY) serve --db .harmony/serve.db
 
 # --- cassettes and the recorded run --------------------------------------------
 
@@ -92,8 +89,6 @@ record:
 recorded-run:
 	$(PY) scripts/write_recorded_run.py
 
-# --- housekeeping --------------------------------------------------------------
-
 clean:
-	rm -rf .harmony .pytest_cache **/__pycache__ .coverage
+	rm -rf .harmony .pytest_cache .coverage
 	find . -name "__pycache__" -type d -prune -exec rm -rf {} + 2>/dev/null || true

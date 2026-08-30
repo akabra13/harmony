@@ -36,11 +36,8 @@ jobs:
 
       # The scenarios are the deliverable. If one stops running, the repo has
       # stopped doing what the README says it does, whatever the unit tests say.
-      - name: Scenario A, Scenario B, and the failure suite
-        run: |
-          harmony demo run scenario-a --db /tmp/ci-a.db
-          harmony demo run scenario-b --db /tmp/ci-b.db
-          harmony demo run failures   --db /tmp/ci-f.db
+      - name: Every scenario, via the documented command
+        run: harmony demo all
 
       # The recorded run in docs/ is generated from the audit log. If regenerating
       # it changes the file, the committed deliverable has drifted from the code.

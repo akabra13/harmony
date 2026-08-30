@@ -159,8 +159,16 @@ understand the architecture in ten seconds, and add a tool in ten lines.
 
 ### Structure
 
-1. **One command**, above the fold: `make install && make demo`. Say explicitly:
-   no API key needed, the model's side is replayed from `cassettes/`.
+1. **One command**, above the fold:
+
+       pip install -e ".[dev]"
+       harmony demo all
+
+   Say explicitly: no API key needed, the model's side is replayed from
+   `cassettes/`. Mention the Makefile as a convenience and *not* as the documented
+   path — a reviewer on Windows has no `make`, and a headline command that works on
+   two platforms out of three is not one command. (This was found by trying to run
+   it: `make` is not installed on the machine this was built on.)
 2. **The one structural idea** — `harmony/` is a product, `northfield/` is a
    customer, and here is how to check.
 3. **Requirement → module table** (below).

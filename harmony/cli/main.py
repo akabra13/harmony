@@ -492,6 +492,31 @@ def demo_list() -> None:
     console.print(table)
 
 
+@demo_app.command("all")
+def demo_all(
+    db: Optional[str] = typer.Option(None),
+) -> None:
+    """Run every scenario this deployment ships, in order.
+
+    The brief asks for one documented command covering Scenario A through approval
+    and execution, the clock advanced with the follow-up firing, Scenario B, and
+    the failure cases. This is it, and it deliberately does not go through `make`:
+    a reviewer on Windows has no make, and a headline command that only works on
+    two of three platforms is not one command.
+    """
+    deployment = load_deployment()
+    for index, (name, scenario) in enumerate(deployment.demos.items()):
+        # Each scenario gets its own database so none of them inherits another's
+        # state; they are independent demonstrations, not a sequence.
+        path = f"{db}-{name}" if db else None
+        kwargs: dict[str, object] = {"db_path": path}
+        if "auto_approve" in scenario.__code__.co_varnames:
+            kwargs["auto_approve"] = True
+        scenario(console, **kwargs)
+        if index < len(deployment.demos) - 1:
+            console.print()
+
+
 @demo_app.command("run")
 def demo_run(
     name: str = typer.Argument(..., help="Scenario name; see `harmony demo list`."),
