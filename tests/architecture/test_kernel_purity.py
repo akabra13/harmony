@@ -244,3 +244,41 @@ def _strip_comments_and_docstrings(source: str) -> str:
             )
 
     return "\n".join(re.sub(r"#.*$", "", line) for line in lines)
+
+
+# --- profiles are internally consistent ----------------------------------------
+
+
+def test_every_profile_offers_only_tools_it_could_actually_invoke():
+    """A profile that advertises a tool it lacks the scope for is a configuration
+    bug with an expensive symptom: the planner is shown an option, spends a model
+    call reasoning about it, and the invoker then refuses. Caught at start-up
+    instead, by ``Harness._validate_startup``.
+
+    Note what this does *not* check: the tools a bound *workflow* uses. The
+    production planner may enter ``po_reroute`` and cannot complete it, which is
+    the situation the brief describes and the gate handles by denying the plan
+    whole. That is an organisational fact, not a misconfiguration.
+    """
+    import tempfile
+
+    from harmony.llm.client import StubClient
+    from harmony.runtime.discovery import load_deployment
+    from harmony.runtime.harness import Harness
+
+    with tempfile.TemporaryDirectory() as tmp:
+        harness = Harness.build(
+            load_deployment(),
+            db_path=Path(tmp) / "profiles.db",
+            llm=StubClient(),
+            seed=True,
+        )
+        for profile in harness.profiles.all():
+            declared = profile.scope_set()
+            assert declared is not None, f"profile '{profile.id}' declares no scopes"
+            for spec in harness.tools.matching(profile.tools):
+                assert spec.scopes <= declared, (
+                    f"profile '{profile.id}' offers '{spec.name}' but does not declare "
+                    f"{sorted(spec.scopes - declared)}"
+                )
+        harness.close()

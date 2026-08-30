@@ -514,5 +514,66 @@ def demo_run(
     scenario(console, **kwargs)
 
 
+# --- evaluation ----------------------------------------------------------------
+
+
+@app.command()
+def eval(
+    live: bool = typer.Option(
+        False, "--live", help="Call the model for real instead of replaying."
+    ),
+    case: Optional[str] = typer.Option(None, help="Run one case by id."),
+    verbose: bool = typer.Option(False, "--verbose", help="Show passing checks too."),
+) -> None:
+    """Check recommendation quality against the deployment's golden cases.
+
+    In replay mode this is a regression test on the harness. With --live it is a
+    regression test on the model and the prompts, which is what you want before
+    shipping a prompt change.
+    """
+    from harmony.eval.runner import load_cases, run_eval
+
+    deployment = load_deployment()
+    if deployment.eval_cases_path is None:
+        console.print("[dim]this deployment ships no evaluation cases[/dim]")
+        raise typer.Exit(0)
+
+    cases = load_cases(deployment.eval_cases_path)
+    if case:
+        cases = [c for c in cases if c.id == case]
+        if not cases:
+            raise typer.BadParameter(f"no case with id '{case}'")
+
+    mode = "live" if live else os.environ.get("HARMONY_LLM", "replay")
+    if live:
+        os.environ["HARMONY_LLM"] = "live"
+
+    console.print(f"running {len(cases)} case(s) in [bold]{mode}[/bold] mode")
+    console.print()
+    report = run_eval(deployment, cases, llm=build_client(), mode=mode)
+
+    for result in report.results:
+        mark = "[green]PASS[/green]" if result.passed else "[red]FAIL[/red]"
+        console.print(f"{mark}  {result.case_id}")
+        if result.error:
+            console.print(f"        [red]{result.error}[/red]")
+        for check in result.checks:
+            if check.passed and not verbose:
+                continue
+            tick = "[green]ok[/green]" if check.passed else "[red]no[/red]"
+            detail = f" — {check.detail}" if check.detail else ""
+            console.print(f"        {tick}  {check.name}{detail}")
+        if result.summary and (verbose or not result.passed):
+            console.print(f'        [dim]said: "{result.summary[:150]}"[/dim]')
+
+    console.print()
+    console.print(
+        f"[bold]{report.passed} passed, {report.failed} failed[/bold] "
+        f"({len(report.results)} cases, {mode} mode)"
+    )
+    if not report.ok:
+        raise typer.Exit(1)
+
+
 if __name__ == "__main__":
     app()

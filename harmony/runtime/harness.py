@@ -153,7 +153,9 @@ class Harness:
         Everything checked here is a wiring mistake that would otherwise surface
         mid-run: a compensation naming a tool that does not exist, a profile
         referencing an unregistered detector, a workflow a profile binds that was
-        never loaded.
+        never loaded, or a profile advertising a tool it has not asked for the
+        scope of — which would look available to the planner and then be refused
+        by the invoker, wasting a model call to reach a foregone conclusion.
         """
         problems = list(self.tools.validate_references())
 
@@ -170,6 +172,23 @@ class Harness:
                         f"profile '{profile.id}' lists detector '{detector_id}', "
                         "which is not registered"
                     )
+            for pattern in profile.tools:
+                if not self.tools.matching([pattern]):
+                    problems.append(
+                        f"profile '{profile.id}' offers tool pattern '{pattern}', "
+                        "which matches no registered tool"
+                    )
+
+            declared = profile.scope_set()
+            if declared is not None:
+                for spec in self.tools.matching(profile.tools):
+                    missing = spec.scopes - declared
+                    if missing:
+                        problems.append(
+                            f"profile '{profile.id}' offers '{spec.name}' but does not "
+                            f"declare {sorted(missing)}, so it could never be invoked"
+                        )
+
             for workflow_name in profile.workflows:
                 if not self.workflows.has(workflow_name):
                     problems.append(

@@ -29,7 +29,6 @@ providers:
 # the profile. The gate and the invoker still check scopes per call.
 tools:
   - erp.*
-  - mail.send*
   - production.notify_supervisor
   - schedule.*
 
@@ -39,8 +38,11 @@ workflows:
   - po_reroute
 
 # What this profile needs. Intersected with the user's own entitlements — never
-# added to them. Dana holds `mail:send` but this profile never asks for it, so her
-# agent cannot send mail on her behalf even though she can.
+# added to them. Dana holds `mail:send` but this profile neither asks for the scope
+# nor lists a mail-sending tool, so her agent cannot write to her mailbox on her
+# behalf even though she can. Withholding both is deliberate: a profile that
+# advertised the tool without the scope would be caught at start-up, but it would
+# also be a confusing thing to have written.
 scopes:
   - erp:part:read
   - erp:po:read

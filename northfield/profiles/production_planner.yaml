@@ -8,6 +8,13 @@
 # boundary rather than a staged one: the run reaches the gate, the gate denies the
 # plan whole, nothing is written, and the audit names the rule and the missing
 # scope. See `make demo-failures`.
+#
+# The denial comes from the *workflow* binding below, not from the tool list. Alex
+# may enter po_reroute — his agent quite reasonably concludes a reroute is the right
+# answer — and the workflow's steps require erp:po:create, which he does not hold.
+# Binding a workflow a profile cannot complete is left permitted on purpose: it is
+# exactly the situation the brief describes, and refusing it at start-up would hide
+# a real organisational fact behind a configuration error.
 
 id: production_planner
 name: Production Planner Agent
@@ -26,11 +33,13 @@ providers:
   - mail
   - calendar
 
+# Only what Alex actually holds the scopes for. Listing erp.create_purchase_order
+# here would be decorative: the catalog filters what the planner is shown by scope
+# (ToolCatalog.available_to), so an unscoped tool is never offered in the first
+# place and start-up validation now rejects the inconsistency.
 tools:
   - erp.list_approved_suppliers_for_part
   - erp.filter_suppliers_by_lead_time
-  - erp.create_purchase_order      # offered by pattern, denied by scope
-  - production.notify_supervisor
   - schedule.*
 
 workflows:

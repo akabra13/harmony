@@ -35,8 +35,7 @@ northfield = "northfield:DEPLOYMENT"
 include = ["harmony*", "northfield*"]
 
 [tool.setuptools.package-data]
-northfield = ["seed/*.yaml", "profiles/*.yaml", "workflows/*.yaml", "*.yaml"]
-harmony = ["plan/prompts/*.md", "workflow/prompts/*.md"]
+northfield = ["seed/*.yaml", "profiles/*.yaml", "workflows/*.yaml", "eval/*.yaml", "*.yaml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -31,6 +31,7 @@ DEPLOYMENT = Deployment(
     profiles_dir=PACKAGE_ROOT / "profiles",
     workflows_dir=PACKAGE_ROOT / "workflows",
     policy_path=PACKAGE_ROOT / "policy.yaml",
+    eval_cases_path=PACKAGE_ROOT / "eval" / "cases.yaml",
     seed=seed,
     directory_factory=directory_factory,
     availability_factory=availability_factory,

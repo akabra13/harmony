@@ -51,6 +51,10 @@ class Deployment:
     available on a day. Northfield answers from its calendar; a real deployment
     would answer from Microsoft Graph."""
 
+    eval_cases_path: Path | None = None
+    """Recommendation-quality cases this company ships. Optional: a deployment with
+    no golden set simply has nothing for `harmony eval` to run."""
+
     demos: dict[str, Callable[..., Any]] = field(default_factory=dict)
     """Scripted narratives this company ships, by name. The CLI lists and dispatches
     them from here rather than importing them, so the kernel never learns a

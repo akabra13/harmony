@@ -1,0 +1,95 @@
+# Golden cases for recommendation quality.
+#
+# Each freezes a situation the seed data produces and asserts on properties of the
+# decision rather than on its wording. Run them in replay mode as a regression test
+# on the harness, or with --live before shipping a prompt or model change.
+#
+# The precision cases at the bottom matter as much as the positive ones. An agent
+# that alerts on everything is easy to build and useless, and only a case asserting
+# silence catches the day it starts doing that.
+
+- id: shortfall-reroutes-through-the-declared-workflow
+  description: >
+    Scenario A. The decisive fact is in prose, in one email; everything downstream
+    of it is arithmetic. The right answer is to enter the declared workflow rather
+    than to assemble a reroute freehand.
+  user: u-101
+  matches: "4812"
+  expect:
+    action_kind: workflow
+    workflow: po_reroute
+    params:
+      at_risk_po_id: PO-77812
+      part_id: P-4471
+      production_order_id: "4812"
+      required_on_site_by: "2026-09-07"
+    cites:
+      - M-001        # the email that creates the problem
+      - PO-77812
+    # `forbids` checks the proposed action, not the reasoning. Naming Apex in order
+    # to reject them would be good behaviour; ordering from them would not.
+    forbids:
+      - S-Q          # Apex: cheapest, fastest, and not qualified for this part
+
+- id: high-value-shortfall-also-reroutes
+  description: >
+    The same shape at a price that will escalate. The planner should not behave
+    differently because the order is expensive — deciding who approves is the
+    gate's job, not the model's.
+  user: u-101
+  matches: "4816"
+  expect:
+    action_kind: workflow
+    workflow: po_reroute
+    params:
+      at_risk_po_id: PO-77820
+      part_id: P-5540
+      production_order_id: "4816"
+    cites:
+      - M-008
+
+- id: quality-hold-reallocates-from-good-stock
+  description: >
+    Scenario B, on the free-form path. A covering lot exists, so the proportionate
+    answer is to reallocate and tell the supervisor — not to escalate a shortage to
+    purchasing, which would create work for another team that does not need doing.
+  user: u-202
+  matches: "L-2093"
+  expect:
+    action_kind: tools
+    tools:
+      - quality.reallocate_lot
+      - production.notify_supervisor
+    cites:
+      - L-2101       # the lot that covers it
+    forbids:
+      - L-2065       # scrapped
+      - L-2088       # released, but already committed to production order 4830
+
+# --- precision: the detector must stay silent ---------------------------------
+
+- id: order-starting-after-supply-arrives-is-not-a-problem
+  description: >
+    Production order 4835 consumes the short part and starts on 2026-09-25, long
+    after any replacement would land. A detector keyed on "this part is short"
+    rather than on "this order will not be covered" would raise it.
+  user: u-101
+  matches: "4835"
+  should_detect: false
+
+- id: a-covered-component-of-an-at-risk-order-is-not-a-problem
+  description: >
+    Order 4812 also consumes P-2218, which is comfortably in stock. Being part of
+    an at-risk order is not itself a risk.
+  user: u-101
+  matches: "P-2218"
+  should_detect: false
+
+- id: a-shipping-update-that-revises-nothing-raises-no-alarm
+  description: >
+    M-003 comes from the same supplier in the same week, reads like a delay notice,
+    and reports that PO-77790 is on schedule. Extraction has to tell confirmation
+    from revision.
+  user: u-101
+  matches: "77790"
+  should_detect: false

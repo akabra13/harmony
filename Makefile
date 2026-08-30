@@ -28,6 +28,8 @@ help:
 	@echo "make demo-failures the eight failure cases"
 	@echo "make test          the whole suite, including architecture tests"
 	@echo "make check         tests + the structural claims the README makes"
+	@echo "make eval          check recommendation quality against golden cases"
+	@echo "make eval-live     the same cases against the real model (needs a key)"
 	@echo "make cassettes     regenerate cassettes from the scripted fixtures"
 	@echo "make record        regenerate cassettes from a LIVE model (needs a key)"
 	@echo "make recorded-run  write docs/runs/scenario-a.md from the audit log"
@@ -70,6 +72,14 @@ check: test
 	@echo "--- the audit chain verifies ---"
 	@$(PY) -m harmony.cli.main audit verify --db $(DEMO_DB) 2>/dev/null \
 	  || echo "(run make demo first)"
+
+# --- evaluation ----------------------------------------------------------------
+
+eval:
+	$(PY) -m harmony.cli.main eval
+
+eval-live:
+	HARMONY_LLM=live $(PY) -m harmony.cli.main eval --live --verbose
 
 # --- cassettes and the recorded run --------------------------------------------
 
