@@ -514,6 +514,38 @@ def demo_run(
     scenario(console, **kwargs)
 
 
+# --- http ----------------------------------------------------------------------
+
+
+@app.command()
+def serve(
+    host: str = typer.Option("127.0.0.1", help="Interface to bind."),
+    port: int = typer.Option(8000, help="Port to bind."),
+    db: Optional[str] = typer.Option(None),
+) -> None:
+    """Serve the approval surface over HTTP.
+
+    The same orchestrator the CLI drives, behind a second front end. Approvals are
+    read and decided at /approvals; a run's narrative is at /runs/{id}/audit.
+    Interactive docs at /docs.
+    """
+    try:
+        import uvicorn
+    except ImportError as exc:  # pragma: no cover
+        raise typer.BadParameter(
+            "the HTTP surface needs extra dependencies: pip install -e '.[http]'"
+        ) from exc
+
+    from harmony.http.app import create_app
+
+    harness = _harness(db=db)
+    console.print(
+        f"serving {harness.deployment.name} on http://{host}:{port}  (docs at /docs)"
+    )
+    console.print("[dim]authenticate with an X-Harmony-User header[/dim]")
+    uvicorn.run(create_app(harness), host=host, port=port, log_level="warning")
+
+
 # --- evaluation ----------------------------------------------------------------
 
 

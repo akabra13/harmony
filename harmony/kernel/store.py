@@ -9,12 +9,21 @@ tables that describe one manufacturer's systems of record.
 Transactions are reentrant. A tool invocation opens one; the workflow engine has
 already opened one around "run the step and advance the cursor". Nesting uses
 SAVEPOINTs so the inner block can fail without discarding the outer one.
+
+**One connection, one writer at a time, explicitly serialised.** The HTTP surface
+runs request handlers in a thread pool, so the connection is shared across threads
+and every access is taken under a re-entrant lock. That is not a workaround — it is
+the single-writer design stated honestly. Two threads cannot write concurrently
+here, and the point at which that stops being acceptable is the first wall
+DESIGN.md identifies: it arrives at roughly one plant, not one company, and the
+answer is Postgres rather than a cleverer lock.
 """
 
 from __future__ import annotations
 
 import json
 import sqlite3
+import threading
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -42,12 +51,17 @@ class Store:
         self.path = Path(path)
         if self.path.parent and str(self.path) != ":memory:":
             self.path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(str(self.path), isolation_level=None, timeout=30.0)
+        # check_same_thread=False because the HTTP surface hands requests to a
+        # thread pool. Safety comes from `_lock` below, not from the connection.
+        self._conn = sqlite3.connect(
+            str(self.path), isolation_level=None, timeout=30.0, check_same_thread=False
+        )
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute("PRAGMA foreign_keys=ON")
         self._conn.execute("PRAGMA busy_timeout=30000")
         self._depth = 0
+        self._lock = threading.RLock()
         self._ensure_migration_table()
 
     # --- lifecycle -------------------------------------------------------------
@@ -94,7 +108,17 @@ class Store:
 
     @contextmanager
     def tx(self) -> Iterator[sqlite3.Connection]:
-        """Reentrant transaction. Outermost commits; nested levels use savepoints."""
+        """Reentrant transaction. Outermost commits; nested levels use savepoints.
+
+        The lock is held for the whole transaction, not merely for each statement.
+        Releasing between statements would let a second thread interleave writes
+        inside somebody else's transaction, which is the bug this is here to
+        prevent rather than a performance detail.
+        """
+        with self._lock:
+            yield from self._tx()
+
+    def _tx(self) -> Iterator[sqlite3.Connection]:
         if self._depth == 0:
             self._conn.execute("BEGIN IMMEDIATE")
             self._depth = 1
@@ -125,11 +149,12 @@ class Store:
     # --- query helpers ---------------------------------------------------------
 
     def query(self, sql: str, params: Sequence[Any] = ()) -> list[sqlite3.Row]:
-        return list(self._conn.execute(sql, params))
+        with self._lock:
+            return list(self._conn.execute(sql, params))
 
     def query_one(self, sql: str, params: Sequence[Any] = ()) -> sqlite3.Row | None:
-        cursor = self._conn.execute(sql, params)
-        return cursor.fetchone()
+        with self._lock:
+            return self._conn.execute(sql, params).fetchone()
 
     def execute(self, sql: str, params: Sequence[Any] = ()) -> sqlite3.Cursor:
         with self.tx() as conn:
