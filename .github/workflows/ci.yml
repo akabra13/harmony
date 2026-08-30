@@ -1,0 +1,50 @@
+# Everything here runs in replay mode: no API key, no cost, no network.
+# `make eval-live` is the one thing CI deliberately does not run — it calls the
+# real model, and a prompt regression should block a human's review rather than
+# a merge queue.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      HARMONY_LLM: replay
+      PYTHONIOENCODING: utf-8
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install
+        run: pip install -e ".[dev]"
+
+      - name: Tests, including the architecture invariants
+        run: pytest -q
+
+      - name: Recommendation quality against the golden cases
+        run: harmony eval
+
+      # The scenarios are the deliverable. If one stops running, the repo has
+      # stopped doing what the README says it does, whatever the unit tests say.
+      - name: Scenario A, Scenario B, and the failure suite
+        run: |
+          harmony demo run scenario-a --db /tmp/ci-a.db
+          harmony demo run scenario-b --db /tmp/ci-b.db
+          harmony demo run failures   --db /tmp/ci-f.db
+
+      # The recorded run in docs/ is generated from the audit log. If regenerating
+      # it changes the file, the committed deliverable has drifted from the code.
+      - name: The recorded run is current
+        run: |
+          python scripts/write_recorded_run.py
+          git diff --exit-code docs/runs/scenario-a.md

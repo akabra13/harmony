@@ -151,7 +151,7 @@ class RunExplainer:
         self, run_id: str, events: Sequence[AuditEvent], *, verbose: bool
     ) -> list[str]:
         lines = [f"# Run `{run_id}`", ""]
-        lines += [f"> {line}" for line in self._headline(events)]
+        lines += [f"> {line}" for line in self._headline(events, include_wall=False)]
         lines.append("")
 
         for title, subtitle, types in SECTIONS:
@@ -173,14 +173,24 @@ class RunExplainer:
     # --- summary pieces --------------------------------------------------------
 
     @staticmethod
-    def _headline(events: Sequence[AuditEvent]) -> list[str]:
+    def _headline(events: Sequence[AuditEvent], *, include_wall: bool = True) -> list[str]:
+        """The run in four lines.
+
+        ``include_wall`` is false for markdown. Real elapsed time is an operational
+        fact worth seeing in a terminal — it distinguishes "the agent waited five
+        days" from "the demo ran in a fifth of a second" — but it varies between
+        identical runs, and a committed artifact that changes on every regeneration
+        is one nobody can diff. The markdown records simulated time, which is the
+        business fact and is reproducible.
+        """
         start = next((e for e in events if e.event_type is EventType.RUN_STARTED), events[0])
         span_clock = f"{events[0].ts_clock:%Y-%m-%d %H:%M} → {events[-1].ts_clock:%Y-%m-%d %H:%M}"
         wall = (events[-1].ts_wall - events[0].ts_wall).total_seconds()
         return [
             start.summary,
             f"acting for: {start.actor_id}   profile: {start.payload.get('profile', '—')}",
-            f"simulated time: {span_clock}   (real elapsed: {wall:.1f}s)",
+            f"simulated time: {span_clock}"
+            + (f"   (real elapsed: {wall:.1f}s)" if include_wall else ""),
             f"events: {len(events)}",
         ]
 

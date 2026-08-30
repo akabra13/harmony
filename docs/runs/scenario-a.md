@@ -17,7 +17,7 @@ narrative.
 
 > opened a run for: P-4471 shortfall will delay production order 4812
 > acting for: u-101   profile: purchasing_manager
-> simulated time: 2026-09-02 08:00 → 2026-09-04 08:00   (real elapsed: 0.2s)
+> simulated time: 2026-09-02 08:00 → 2026-09-04 08:00
 > events: 60
 
 ## What the agent saw
@@ -87,17 +87,17 @@ narrative.
 *The request, any escalation, and the decision.*
 
 - **2026-09-02 08:00** · `u-101` — asked Dana Whitfield (u-101) to approve: Part P-4471 will likely cause production order 4812 to miss its scheduled start. Kestrel says PO-77812 now arrives Tuesday 9/8, a day after the build begins. I can move the order to an approved alternate supplier and notify production. Want me to proceed?
-  - `approval_id`: APR-988b
+  - `approval_id`: APR-c06b
   - `approver_id`: u-101
-- **2026-09-02 08:00** · `u-101` — Dana Whitfield (u-101) approved APR-988b: Approved — keep Line 2 running.
-  - `approval_id`: APR-988b
+- **2026-09-02 08:00** · `u-101` — Dana Whitfield (u-101) approved APR-c06b: Approved — keep Line 2 running.
+  - `approval_id`: APR-c06b
   - `decided_by`: u-101
 
 ## What actually happened in each system
 
 *Every effect, every rollback, and every piece of work deferred to later.*
 
-- **2026-09-02 08:00** · `u-101` — will re-check approval APR-988b at end of day
+- **2026-09-02 08:00** · `u-101` — will re-check approval APR-c06b at end of day
   - `kind`: approval.escalate
   - `fire_at`: 2026-09-02T23:59:59
 - **2026-09-02 08:00** · `u-101` — entering po_reroute@v3: Replace an at-risk purchase order with one from an alternate approved supplier who can deliver before production starts, then tell production and schedule a check that the goods actually arrive.
@@ -204,7 +204,7 @@ special mechanism.
 
 > opened a run for: PO-b5cce has not been received; production order 4812 is at risk
 > acting for: u-101   profile: purchasing_manager
-> simulated time: 2026-09-04 08:00 → 2026-09-04 08:00   (real elapsed: 0.0s)
+> simulated time: 2026-09-04 08:00 → 2026-09-04 08:00
 > events: 19
 
 ## What the agent saw
@@ -258,14 +258,14 @@ special mechanism.
 *The request, any escalation, and the decision.*
 
 - **2026-09-04 08:00** · `u-101` — asked Dana Whitfield (u-101) to approve: The replacement order for P-4471 has not been received on its promised date. Production order 4812 still has three days of margin. I can warn the line and re-check tomorrow rather than reroute again.
-  - `approval_id`: APR-0235
+  - `approval_id`: APR-88cb
   - `approver_id`: u-101
 
 ## What actually happened in each system
 
 *Every effect, every rollback, and every piece of work deferred to later.*
 
-- **2026-09-04 08:00** · `u-101` — will re-check approval APR-0235 at end of day
+- **2026-09-04 08:00** · `u-101` — will re-check approval APR-88cb at end of day
   - `kind`: approval.escalate
   - `fire_at`: 2026-09-04T23:59:59
 

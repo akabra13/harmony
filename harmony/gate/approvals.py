@@ -35,7 +35,7 @@ from harmony.audit.models import EventType
 from harmony.identity.grant import ExecutionGrant
 from harmony.identity.session import Session
 from harmony.kernel.errors import ApprovalMismatch, HarmonyError
-from harmony.kernel.ids import new_id
+from harmony.kernel.ids import short_digest
 from harmony.kernel.store import Store
 from harmony.plan.models import Proposal
 from harmony.schedule.models import ScheduledTask
@@ -57,7 +57,11 @@ class ApprovalState(StrEnum):
 class ApprovalRequest(BaseModel):
     """One request for a human decision."""
 
-    approval_id: str = Field(default_factory=lambda: new_id("APR", 4))
+    approval_id: str = ""
+    """Derived in :meth:`ApprovalService.request` from the run, the plan and the
+    escalation round, so a reproducible run produces reproducible approval ids.
+    See ``Orchestrator._run_id_for`` for why that matters."""
+
     run_id: str
     proposal_id: str
     proposal_digest: str
@@ -127,6 +131,7 @@ class ApprovalService:
         """Ask a human, and schedule the check for what happens if they do not answer."""
         now = session.clock.now()
         approval = ApprovalRequest(
+            approval_id=f"APR-{short_digest(session.run_id, proposal.digest(), 0, length=4)}",
             run_id=session.run_id,
             proposal_id=proposal.proposal_id,
             proposal_digest=proposal.digest(),
@@ -328,6 +333,9 @@ class ApprovalService:
         )
 
         successor = ApprovalRequest(
+            approval_id=(
+                f"APR-{short_digest(approval.run_id, approval.proposal_digest, approval.escalation_count + 1, length=4)}"
+            ),
             run_id=approval.run_id,
             proposal_id=approval.proposal_id,
             proposal_digest=approval.proposal_digest,
