@@ -21,9 +21,11 @@ Verified as of this build. Re-check anything you quote.
 
 | Fact | How to check |
 |---|---|
-| 82 tests pass, including 6 architecture tests | `make test` |
-| ~9,000 lines in `harmony/`, ~4,800 in `northfield/`, ~1,800 in `tests/` | `find harmony -name '*.py' \| xargs wc -l \| tail -1` |
+| 99 tests pass, including 7 architecture tests | `make test` |
+| 6 golden recommendation-quality cases pass | `make eval` (or `make eval-live`) |
+| ~9,700 lines in `harmony/`, ~4,800 in `northfield/`, ~2,100 in `tests/` | `find harmony -name '*.py' \| xargs wc -l \| tail -1` |
 | 15 tools, 3 detectors, 4 providers, 4 gate rules, 3 profiles, 1 workflow | `harmony catalog tools` / `detectors` / `profiles` |
+| Approvals work over CLI *and* HTTP, through the same orchestrator | `harmony serve`, then `tests/integration/test_http.py` |
 | No manufacturing vocabulary in the kernel | `pytest tests/architecture/test_kernel_purity.py` |
 | The kernel never imports `northfield` | same file, `test_the_kernel_never_imports_the_company` |
 | Nothing reads the wall clock outside `harmony/kernel/clock.py` | same file, `test_nothing_outside_the_clock_module_reads_the_wall_clock` |
@@ -32,10 +34,39 @@ Verified as of this build. Re-check anything you quote.
 | Scenario A's run is byte-for-byte reproducible | `make demo-a` twice; the run id is `RUN-6cf0ff` both times |
 | The recorded run is generated from the ledger alone | `make recorded-run` → `docs/runs/scenario-a.md` |
 
-**On the deployment entry point.** The kernel discovers companies through the
-`harmony.deployments` entry point in `pyproject.toml` rather than importing one.
-This came out of the architecture test failing — worth mentioning, because "the test
-caught me hardcoding it" is a better story than "I designed it that way."
+### Three defects the work found, and why they are worth mentioning
+
+Reviewers discount claims and credit evidence. Each of these is evidence that the
+mechanism you built actually does something, and each is a better story than "I
+designed it correctly."
+
+**The architecture test caught the kernel importing the company.** `harmony/cli/main.py`
+had `from northfield import DEPLOYMENT`. The fix was not to exempt the CLI — a
+hardcoded default string is a hardcoded dependency wearing a disguise — but to make
+deployments register through a `harmony.deployments` packaging entry point
+(`harmony/runtime/discovery.py`). The kernel now discovers what is installed.
+
+**Replay mode caught the runs being irreproducible.** Prompts downstream of a write
+embed the identifiers it produced — the drafted notification names the new purchase
+order — so random ids made every prompt, and therefore every recorded exchange,
+unrepeatable. Identifiers minted by tools now derive from the call's idempotency
+key, run ids from the situation, workflow instance ids from the run. A replayed
+write yields the same identifier and a whole run is reproducible. This is worth a
+paragraph in the README: it started as a testing problem and turned into a property
+worth having for its own sake, because a run you cannot reproduce is a run you
+cannot investigate.
+
+**Standing up the HTTP server caught a threading bug.** `Store` held one SQLite
+connection bound to its creating thread; any real server hands requests to a pool.
+Access is now serialised under a re-entrant lock held for the whole transaction —
+releasing between statements would let a second thread interleave writes inside
+somebody else's transaction. Say this plainly and connect it to the scaling answer:
+it is the single-writer design stated honestly, and it is the first wall.
+
+**One more, smaller:** writing the eval cases showed that a `forbids` check against
+the whole proposal punished a model for *naming a trap in order to reject it* —
+which is the behaviour you want. It now checks the proposed action only. Good
+illustration that eval design is itself a design problem.
 
 ---
 
@@ -235,8 +266,16 @@ validation.
 This is graded. Each gets one sentence on why it was right to drop *given three
 days*, and one on what replaces it.
 
-- **No UI beyond the CLI.** The brief said a CLI is fine. The approval step is
-  `harmony approvals show/approve/reject`.
+- **No UI.** The brief said a CLI or an HTTP endpoint is fine; both exist
+  (`harmony approvals ...` and `harmony serve`). A web front end would have been
+  presentation work, not architecture.
+- **HTTP auth is a fake header.** `X-Harmony-User`, replaced by a validated OIDC
+  token in a real deployment. Shipping a homegrown auth scheme that would be thrown
+  away teaches a reviewer nothing; the module docstring says so, and DESIGN.md has
+  the real design.
+- **HTTP approval executes inline.** Right at this scale, wrong at any other — a
+  ninety-second workflow should not hold a connection open. The durable queue is
+  already the seam.
 - **No real IdP.** DESIGN.md has the token-exchange design; implementing it would
   have proved nothing the `Session` object doesn't already show.
 - **Durable memory is thin on purpose.** The interface is right — provenance, TTL,
@@ -451,13 +490,25 @@ rate, detection lead time versus time-to-impact, and human edit distance on draf
 text. That last one is the cheapest quality signal in the system and almost nobody
 instruments it.
 
-**Catching regressions before users do:** a golden set of (attention item + frozen
-context) → expected proposal class, replayed on every prompt or model change. The
-cassette mechanism is already this, one step short — `cassettes/` freezes the model's
-*output*; an eval set would freeze the *input* and assert on the output. Say that:
-it shows the eval design falls out of what's built rather than being bolted on.
-Then LLM-as-judge on justification quality, calibrated against human labels, and
-shadow-mode for new prompt versions before promotion.
+**Catching regressions before users do — this one is built, so describe it rather
+than proposing it.** `northfield/eval/cases.yaml` holds six golden cases; `make eval`
+replays them and `make eval-live` runs the same cases against the real model. The
+design decision worth explaining: cases assert on *properties of the decision* —
+action kind, workflow entered, parameters supplied, evidence cited, traps avoided —
+never on wording. Asserting on text gives a suite that fails on every rewrite, which
+is a suite people delete.
+
+Two points that show the thinking:
+
+- **Half the cases assert silence.** A suite of only positive cases passes an agent
+  that alerts on everything, and that is the easiest failure mode to ship.
+- **`forbids` checks the action, not the reasoning.** A model that names Apex in
+  order to reject them is doing the right thing; punishing that would train it
+  towards silent avoidance instead of stated reasoning.
+
+What is still missing, and say so: nothing here measures *wording* quality. That
+needs human edit distance on drafted notifications and a judge model calibrated
+against labels, plus shadow-mode for new prompt versions before promotion.
 
 ---
 
