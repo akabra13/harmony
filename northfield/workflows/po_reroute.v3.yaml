@@ -54,7 +54,11 @@ params:
     description: The date the goods must be on site — the production start date.
   qty:
     type: integer
-    description: Quantity to order from the replacement supplier.
+    description: >
+      Quantity to order from the replacement supplier. The original order is
+      reduced by exactly this amount — so ordering only the shortfall leaves the
+      remainder on the original order, and ordering the full quantity cancels it.
+      Either is valid; choose what the situation calls for.
   supervisor_id:
     type: string
     description: The production supervisor to notify.
@@ -149,13 +153,17 @@ steps:
   #
   # The tool returns the previous status and quantity, and the compensation binds
   # to them. A rollback that had to guess what it was restoring would not be one.
+  # Reduced by exactly what the replacement covers, so a partial reroute leaves the
+  # remainder on order rather than destroying it. A live run found this: the model
+  # sensibly ordered only the 120-unit shortfall, and an unconditional cancellation
+  # would have thrown away the other 280 units the original order was bringing.
   - id: reduce_original_po
     kind: tool
-    description: Cancel the original purchase order now that it is replaced
+    description: Reduce the original order by what the replacement now covers
     tool: erp.cancel_or_reduce_purchase_order
     input:
       po_id: ${params.at_risk_po_id}
-      new_qty: 0
+      covered_elsewhere: ${params.qty}
       reason: replaced by ${steps.create_replacement_po.output.po_id}
     compensation:
       tool: erp.restore_purchase_order

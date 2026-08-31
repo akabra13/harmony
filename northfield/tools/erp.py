@@ -280,7 +280,14 @@ def cancel_purchase_order(session: Session, inp: CancelPOInput) -> CancelPOOutpu
 
 class ReducePOInput(BaseModel):
     po_id: str
-    new_qty: int = Field(ge=0, description="Zero cancels the order outright.")
+    covered_elsewhere: int = Field(
+        ge=0,
+        description=(
+            "How much of this order's quantity is now being supplied by someone "
+            "else. The order is reduced by this amount, and cancelled outright if "
+            "nothing is left."
+        ),
+    )
     reason: str = ""
 
 
@@ -296,8 +303,9 @@ class ReducePOOutput(BaseModel):
 @tool(
     "erp.cancel_or_reduce_purchase_order",
     description=(
-        "Reduce an open purchase order's quantity, or cancel it entirely when the "
-        "new quantity is zero. Returns the previous state so the change can be undone."
+        "Reduce an open purchase order by a quantity now sourced elsewhere, or "
+        "cancel it outright if that leaves nothing. Returns the previous state so "
+        "the change can be undone."
     ),
     scopes={"erp:po:cancel"},
     input=ReducePOInput,
@@ -318,13 +326,20 @@ def cancel_or_reduce_purchase_order(session: Session, inp: ReducePOInput) -> Red
             status=po["status"],
         )
 
-    if inp.new_qty == 0:
+    # The arithmetic lives here rather than in a workflow binding, because bindings
+    # deliberately move values and never compute them. It matters: a replacement
+    # that covers only the shortfall must leave the remainder on the original order,
+    # or the difference is silently destroyed. Cancelling outright is the special
+    # case where the replacement covers everything.
+    new_qty = max(0, po["qty"] - inp.covered_elsewhere)
+
+    if new_qty == 0:
         erp.set_purchase_order_status(store, inp.po_id, "cancelled", note=inp.reason)
         action, status, qty = "cancelled", "cancelled", 0
     else:
-        erp.set_purchase_order_qty(store, inp.po_id, inp.new_qty)
+        erp.set_purchase_order_qty(store, inp.po_id, new_qty)
         erp.set_purchase_order_status(store, inp.po_id, po["status"], note=inp.reason)
-        action, status, qty = "reduced", po["status"], inp.new_qty
+        action, status, qty = "reduced", po["status"], new_qty
 
     return ReducePOOutput(
         po_id=inp.po_id,

@@ -6,7 +6,7 @@ deliberately small: the brief asked for as little as the scenarios allow, and ev
 entity and field below exists because a scenario or a control needs it. Where
 something is missing, that is a decision, and it is listed at the end.
 
-The starting position is Wednesday 2026-09-02, 08:00, on a simulated clock.
+The starting position is Monday 2026-09-02, 08:00, on a simulated clock.
 
 ---
 

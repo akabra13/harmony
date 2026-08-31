@@ -68,7 +68,7 @@
   },
   "response": {
     "input_tokens": 1371,
-    "latency_ms": 1688,
+    "latency_ms": 1813,
     "model": "claude-haiku-4-5-20251001",
     "output": {
       "confidence": 0.95,

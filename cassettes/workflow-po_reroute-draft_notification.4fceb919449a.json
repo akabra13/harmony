@@ -1,6 +1,6 @@
 {
   "call_site": "workflow.po_reroute.draft_notification",
-  "key": "7eeac46beadc172e9e4ca673c8b07805d660787c9218f0351696d79fd3d4d214",
+  "key": "4fceb919449a6afac8d5c9d8b0e8d972795bb0f7b8fd4f4c7e029377ea23f29b",
   "request": {
     "output_schema": {
       "properties": {
@@ -24,18 +24,18 @@
       "title": "po_reroute_v3_draft_notification_output",
       "type": "object"
     },
-    "prompt": "Production order affected: 4812\nPart: P-4471, quantity 400\nOriginal purchase order, now cancelled: PO-77812\nReplacement purchase order: PO-d14ba\nNew supplier: S-Z\nExpected on site: 2026-09-04\nRequired on site by: 2026-09-07\n",
+    "prompt": "Production order affected: 4812\nPart: P-4471, quantity 120\nOriginal purchase order, now cancelled: PO-77812\nReplacement purchase order: PO-6dbdf\nNew supplier: S-Z\nExpected on site: 2026-09-04\nRequired on site by: 2026-09-07\n",
     "system": "You are drafting an internal message from a purchasing manager to a production supervisor. Be brief and factual. State what changed, which supplier is now supplying, and when the goods are expected. Do not apologise, do not speculate about causes, and do not make commitments beyond the dates you have been given.\n"
   },
   "response": {
     "input_tokens": 878,
-    "latency_ms": 1842,
+    "latency_ms": 1858,
     "model": "claude-haiku-4-5-20251001",
     "output": {
-      "body": "Production Order 4812 for Part P-4471 (quantity 400) has been rerouted to a new supplier.\n\nOriginal PO-77812 has been cancelled and replaced by PO-d14ba.\n\nNew supplier: S-Z\nExpected delivery: 2026-09-04\nRequired on site by: 2026-09-07",
-      "subject": "Production Order 4812 \u2013 Supplier Change for Part P-4471"
+      "body": "Production order 4812 has been rerouted to a new supplier.\n\nPart: P-4471 (Qty: 120)\nPrevious PO: PO-77812 (cancelled)\nNew PO: PO-6dbdf\nNew Supplier: S-Z\nExpected delivery: 2026-09-04\nRequired on site by: 2026-09-07",
+      "subject": "Production Order 4812 - Supplier Change for Part P-4471"
     },
-    "output_tokens": 144,
+    "output_tokens": 152,
     "stop_reason": "tool_use"
   },
   "source": "recorded"

@@ -29,13 +29,13 @@
   },
   "response": {
     "input_tokens": 991,
-    "latency_ms": 2000,
+    "latency_ms": 1766,
     "model": "claude-haiku-4-5-20251001",
     "output": {
-      "justification": "Meridian Drives is the only qualified supplier available for this critical line-stop replacement order and delivers 3 days before the required deadline with a strong 94% on-time rate. Given the urgency of supporting production order 4812, Meridian's reliable delivery performance and expedited 2-day lead time make it the clear choice to minimize production downtime.",
+      "justification": "Meridian Drives (S-Z) is the only qualified supplier available for this critical line-stop order and delivers 3 days early with a strong 94% on-time rate. With a 2-day lead time and projected arrival on 2026-09-04, they provide the reliability needed to minimize production downtime for order 4812.",
       "supplier_id": "S-Z"
     },
-    "output_tokens": 132,
+    "output_tokens": 130,
     "stop_reason": "tool_use"
   },
   "source": "recorded"
