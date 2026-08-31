@@ -49,21 +49,21 @@ narrative.
 - **2026-09-02 08:00** · `u-101` — asked the model: planner
   - `call_site`: planner
   - `model`: claude-haiku-4-5-20251001
-  - `input_tokens`: 9220
-  - `output_tokens`: 1385
-- **2026-09-02 08:00** · `u-101` — PO-77812 will arrive one day after production 4812 starts (Sept 8 vs Sept 7); reroute the order to Meridian Drives, who can deliver P-4471 by Sept 7 with the fastest lead time (2 days) and highest reliability (94% on-time rate).
+  - `input_tokens`: 9300
+  - `output_tokens`: 1527
+- **2026-09-02 08:00** · `u-101` — PO-77812 from Kestrel will arrive 2026-09-08, one day after production order 4812 starts 2026-09-07, leaving a shortfall of 120 units of P-4471; reroute to Meridian Drives, who can deliver within 2 days at nearly the same price and higher on-time rate.
   - `action_kind`: workflow
-  - `digest`: fc3365d76458
+  - `digest`: aefb0e5a3150
 - **2026-09-02 08:00** · `u-101` — asked the model: workflow.po_reroute.choose_supplier
   - `call_site`: workflow.po_reroute.choose_supplier
   - `model`: claude-haiku-4-5-20251001
   - `input_tokens`: 991
-  - `output_tokens`: 134
+  - `output_tokens`: 144
 - **2026-09-02 08:00** · `u-101` — asked the model: workflow.po_reroute.draft_notification
   - `call_site`: workflow.po_reroute.draft_notification
   - `model`: claude-haiku-4-5-20251001
   - `input_tokens`: 878
-  - `output_tokens`: 136
+  - `output_tokens`: 152
 
 ## What the agent was allowed to do
 
@@ -86,18 +86,18 @@ narrative.
 
 *The request, any escalation, and the decision.*
 
-- **2026-09-02 08:00** · `u-101` — asked Dana Whitfield (u-101) to approve: PO-77812 will arrive one day after production 4812 starts (Sept 8 vs Sept 7); reroute the order to Meridian Drives, who can deliver P-4471 by Sept 7 with the fastest lead time (2 days) and highest reliability (94% on-time rate).
-  - `approval_id`: APR-7227
+- **2026-09-02 08:00** · `u-101` — asked Dana Whitfield (u-101) to approve: PO-77812 from Kestrel will arrive 2026-09-08, one day after production order 4812 starts 2026-09-07, leaving a shortfall of 120 units of P-4471; reroute to Meridian Drives, who can deliver within 2 days at nearly the same price and higher on-time rate.
+  - `approval_id`: APR-f75b
   - `approver_id`: u-101
-- **2026-09-02 08:00** · `u-101` — Dana Whitfield (u-101) approved APR-7227: Approved — keep Line 2 running.
-  - `approval_id`: APR-7227
+- **2026-09-02 08:00** · `u-101` — Dana Whitfield (u-101) approved APR-f75b: Approved — keep Line 2 running.
+  - `approval_id`: APR-f75b
   - `decided_by`: u-101
 
 ## What actually happened in each system
 
 *Every effect, every rollback, and every piece of work deferred to later.*
 
-- **2026-09-02 08:00** · `u-101` — will re-check approval APR-7227 at end of day
+- **2026-09-02 08:00** · `u-101` — will re-check approval APR-f75b at end of day
   - `kind`: approval.escalate
   - `fire_at`: 2026-09-02T23:59:59
 - **2026-09-02 08:00** · `u-101` — entering po_reroute@v3: Replace an at-risk purchase order with one from an alternate approved supplier who can deliver before production starts, then tell production and schedule a check that the goods actually arrive.
@@ -130,55 +130,55 @@ narrative.
 - **2026-09-02 08:00** · `u-101` — step 'choose_supplier': Choose among the qualified, in-time suppliers and justify the choice
 - **2026-09-02 08:00** · `u-101` — step 'choose_supplier' completed
   - `step_id`: choose_supplier
-  - `output`: {'supplier_id': 'S-Z', 'justification': 'Meridian Drives (S-Z) is the only qualified supplier available for this urgent line-stop situation, with an excellent …
+  - `output`: {'supplier_id': 'S-Z', 'justification': 'Meridian Drives is the only qualified supplier available for this critical line-stop situation and delivers with a str…
 - **2026-09-02 08:00** · `u-101` — step 'create_replacement_po': Raise the replacement purchase order
 - **2026-09-02 08:00** · `u-101` — Raise the replacement purchase order
   - `tool`: erp.create_purchase_order
   - `writes`: True
-  - `params`: {'part_id': 'P-4471', 'supplier_id': 'S-Z', 'qty': 120, 'need_by': '2026-09-07', 'replaces_po': 'PO-77812', 'reason': 'Meridian Drives (S-Z) is the only qualif…
+  - `params`: {'part_id': 'P-4471', 'supplier_id': 'S-Z', 'qty': 120, 'need_by': '2026-09-07', 'replaces_po': 'PO-77812', 'reason': 'Meridian Drives is the only qualified su…
 - **2026-09-02 08:00** · `u-101` — erp.create_purchase_order completed
   - `tool`: erp.create_purchase_order
-  - `output`: {'po_id': 'PO-b7905', 'part_id': 'P-4471', 'supplier_id': 'S-Z', 'qty': 120, 'unit_price': 46.5, 'total_value': 5580.0, 'promised_date': '2026-09-04', 'status'…
+  - `output`: {'po_id': 'PO-6dbdf', 'part_id': 'P-4471', 'supplier_id': 'S-Z', 'qty': 120, 'unit_price': 46.5, 'total_value': 5580.0, 'promised_date': '2026-09-04', 'status'…
 - **2026-09-02 08:00** · `u-101` — step 'create_replacement_po' completed
   - `step_id`: create_replacement_po
-  - `output`: {'po_id': 'PO-b7905', 'part_id': 'P-4471', 'supplier_id': 'S-Z', 'qty': 120, 'unit_price': 46.5, 'total_value': 5580.0, 'promised_date': '2026-09-04', 'status'…
-- **2026-09-02 08:00** · `u-101` — step 'reduce_original_po': Cancel the original purchase order now that it is replaced
-- **2026-09-02 08:00** · `u-101` — Cancel the original purchase order now that it is replaced
+  - `output`: {'po_id': 'PO-6dbdf', 'part_id': 'P-4471', 'supplier_id': 'S-Z', 'qty': 120, 'unit_price': 46.5, 'total_value': 5580.0, 'promised_date': '2026-09-04', 'status'…
+- **2026-09-02 08:00** · `u-101` — step 'reduce_original_po': Reduce the original order by what the replacement now covers
+- **2026-09-02 08:00** · `u-101` — Reduce the original order by what the replacement now covers
   - `tool`: erp.cancel_or_reduce_purchase_order
   - `writes`: True
-  - `params`: {'po_id': 'PO-77812', 'new_qty': 0, 'reason': 'replaced by PO-b7905'}
+  - `params`: {'po_id': 'PO-77812', 'covered_elsewhere': 120, 'reason': 'replaced by PO-6dbdf'}
 - **2026-09-02 08:00** · `u-101` — erp.cancel_or_reduce_purchase_order completed
   - `tool`: erp.cancel_or_reduce_purchase_order
-  - `output`: {'po_id': 'PO-77812', 'previous_status': 'open', 'previous_qty': 400, 'status': 'cancelled', 'qty': 0, 'action': 'cancelled'}
+  - `output`: {'po_id': 'PO-77812', 'previous_status': 'open', 'previous_qty': 400, 'status': 'open', 'qty': 280, 'action': 'reduced'}
 - **2026-09-02 08:00** · `u-101` — step 'reduce_original_po' completed
   - `step_id`: reduce_original_po
-  - `output`: {'po_id': 'PO-77812', 'previous_status': 'open', 'previous_qty': 400, 'status': 'cancelled', 'qty': 0, 'action': 'cancelled'}
+  - `output`: {'po_id': 'PO-77812', 'previous_status': 'open', 'previous_qty': 400, 'status': 'open', 'qty': 280, 'action': 'reduced'}
 - **2026-09-02 08:00** · `u-101` — step 'draft_notification': Draft the message to the production supervisor
 - **2026-09-02 08:00** · `u-101` — step 'draft_notification' completed
   - `step_id`: draft_notification
-  - `output`: {'subject': 'Production Order 4812 – Supplier Change for Part P-4471', 'body': 'Production Order 4812 (Part P-4471, Qty 120):\n\nPurchase order PO-77812 has be…
+  - `output`: {'subject': 'Production Order 4812 - Supplier Change for Part P-4471', 'body': 'Production order 4812 has been rerouted to a new supplier.\n\nPart: P-4471 (Qty…
 - **2026-09-02 08:00** · `u-101` — step 'notify_production': Tell the production supervisor
 - **2026-09-02 08:00** · `u-101` — Tell the production supervisor
   - `tool`: production.notify_supervisor
   - `writes`: True
-  - `params`: {'supervisor_id': 'u-301', 'subject': 'Production Order 4812 – Supplier Change for Part P-4471', 'body': 'Production Order 4812 (Part P-4471, Qty 120):\n\nPurc…
+  - `params`: {'supervisor_id': 'u-301', 'subject': 'Production Order 4812 - Supplier Change for Part P-4471', 'body': 'Production order 4812 has been rerouted to a new supp…
 - **2026-09-02 08:00** · `u-101` — production.notify_supervisor completed
   - `tool`: production.notify_supervisor
-  - `output`: {'notification_id': 'NTF-b734', 'recipient_id': 'u-301', 'delivered': True}
+  - `output`: {'notification_id': 'NTF-0bdc', 'recipient_id': 'u-301', 'delivered': True}
 - **2026-09-02 08:00** · `u-101` — step 'notify_production' completed
   - `step_id`: notify_production
-  - `output`: {'notification_id': 'NTF-b734', 'recipient_id': 'u-301', 'delivered': True}
+  - `output`: {'notification_id': 'NTF-0bdc', 'recipient_id': 'u-301', 'delivered': True}
 - **2026-09-02 08:00** · `u-101` — step 'schedule_arrival_check': Schedule a check that the replacement shipment actually arrives
 - **2026-09-02 08:00** · `u-101` — Schedule a check that the replacement shipment actually arrives
   - `tool`: schedule.create_followup
   - `writes`: True
-  - `params`: {'detector': 'po_arrival_check', 'fire_at': '2026-09-04', 'reason': 'confirm the replacement for PO-77812 arrived as promised', 'payload': {'po_id': 'PO-b7905'…
+  - `params`: {'detector': 'po_arrival_check', 'fire_at': '2026-09-04', 'reason': 'confirm the replacement for PO-77812 arrived as promised', 'payload': {'po_id': 'PO-6dbdf'…
 - **2026-09-02 08:00** · `u-101` — schedule.create_followup completed
   - `tool`: schedule.create_followup
-  - `output`: {'task_id': 'TSK-9c6ebd', 'fire_at': '2026-09-04', 'detector': 'po_arrival_check', 'already_scheduled': False}
+  - `output`: {'task_id': 'TSK-f88461', 'fire_at': '2026-09-04', 'detector': 'po_arrival_check', 'already_scheduled': False}
 - **2026-09-02 08:00** · `u-101` — step 'schedule_arrival_check' completed
   - `step_id`: schedule_arrival_check
-  - `output`: {'task_id': 'TSK-9c6ebd', 'fire_at': '2026-09-04', 'detector': 'po_arrival_check', 'already_scheduled': False}
+  - `output`: {'task_id': 'TSK-f88461', 'fire_at': '2026-09-04', 'detector': 'po_arrival_check', 'already_scheduled': False}
 - **2026-09-02 08:00** · `u-101` — po_reroute@v3 completed all 8 steps
 - **2026-09-04 08:00** · `system:harmony` — firing approval.escalate
 - **2026-09-04 08:00** · `system:harmony` — firing detector.run
@@ -200,9 +200,9 @@ scheduled. It went through detection, planning, gating and approval
 exactly as the first one did — a follow-up is a targeted detection, not a
 special mechanism.
 
-# Run `RUN-94c9ff`
+# Run `RUN-787b67`
 
-> opened a run for: PO-b7905 has not been received; production order 4812 is at risk
+> opened a run for: PO-6dbdf has not been received; production order 4812 is at risk
 > acting for: u-101   profile: purchasing_manager
 > simulated time: 2026-09-04 08:00 → 2026-09-04 08:00
 > events: 19
@@ -211,7 +211,7 @@ special mechanism.
 
 *Detection, the context it gathered, and what it was not permitted to read.*
 
-- **2026-09-04 08:00** · `u-101` — gathering context for PO-b7905 has not been received; production order 4812 is at risk
+- **2026-09-04 08:00** · `u-101` — gathering context for PO-6dbdf has not been received; production order 4812 is at risk
 - **2026-09-04 08:00** · `u-101` — read 9 record(s) from erp
   - `counts`: {'parts': 1, 'suppliers': 6, 'purchase_orders': 1, 'production_orders': 1, 'goods_receipts': 0}
 - **2026-09-04 08:00** · `u-101` — read 6 record(s) from mail
@@ -230,11 +230,11 @@ special mechanism.
 - **2026-09-04 08:00** · `u-101` — asked the model: planner
   - `call_site`: planner
   - `model`: claude-haiku-4-5-20251001
-  - `input_tokens`: 8933
-  - `output_tokens`: 1790
-- **2026-09-04 08:00** · `u-101` — PO-b7905 from Meridian Drives (S-Z) has not arrived on its promised date of today (2026-09-04), placing production order 4812 at critical risk; reroute the order to Apex Rapid Supply, which can deliver NEMA 23 steppers next day at lower cost ($38 vs $46.50/unit).
+  - `input_tokens`: 9019
+  - `output_tokens`: 1845
+- **2026-09-04 08:00** · `u-101` — PO-6dbdf from Meridian Drives is due today but has not arrived; immediate reroute to Apex Rapid Supply (1-day lead time, $38/unit) can deliver 120 units by tomorrow, protecting production order 4812 scheduled to start September 7.
   - `action_kind`: workflow
-  - `digest`: 11a3b29d91f8
+  - `digest`: 2044a4c58fbd
 
 ## What the agent was allowed to do
 
@@ -257,15 +257,15 @@ special mechanism.
 
 *The request, any escalation, and the decision.*
 
-- **2026-09-04 08:00** · `u-101` — asked Dana Whitfield (u-101) to approve: PO-b7905 from Meridian Drives (S-Z) has not arrived on its promised date of today (2026-09-04), placing production order 4812 at critical risk; reroute the order to Apex Rapid Supply, which can deliver NEMA 23 steppers next day at lower cost ($38 vs $46.50/unit).
-  - `approval_id`: APR-b294
+- **2026-09-04 08:00** · `u-101` — asked Dana Whitfield (u-101) to approve: PO-6dbdf from Meridian Drives is due today but has not arrived; immediate reroute to Apex Rapid Supply (1-day lead time, $38/unit) can deliver 120 units by tomorrow, protecting production order 4812 scheduled to start September 7.
+  - `approval_id`: APR-eb3b
   - `approver_id`: u-101
 
 ## What actually happened in each system
 
 *Every effect, every rollback, and every piece of work deferred to later.*
 
-- **2026-09-04 08:00** · `u-101` — will re-check approval APR-b294 at end of day
+- **2026-09-04 08:00** · `u-101` — will re-check approval APR-eb3b at end of day
   - `kind`: approval.escalate
   - `fire_at`: 2026-09-04T23:59:59
 
