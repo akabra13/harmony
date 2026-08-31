@@ -38,6 +38,12 @@ def _configure_stdio() -> None:
 
 _configure_stdio()
 
+from harmony.kernel.config import load_env
+
+# Before any module reads the environment. An exported variable still wins; see
+# harmony/kernel/config.py.
+load_env()
+
 from harmony.audit.explain import RunExplainer
 from harmony.llm.replay import build_client
 from harmony.runtime.discovery import load_deployment

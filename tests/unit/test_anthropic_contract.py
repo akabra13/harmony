@@ -15,7 +15,7 @@ fake transport catches all three for the price of no tokens.
 
 from __future__ import annotations
 
-import datetime as _dt
+import os
 from typing import Any
 
 import pytest
@@ -189,3 +189,71 @@ def test_a_missing_api_key_fails_with_an_actionable_message():
     finally:
         if saved is not None:
             os.environ["ANTHROPIC_API_KEY"] = saved
+
+
+# --- configuration --------------------------------------------------------------
+
+
+def test_a_dotenv_file_reaches_the_process(tmp_path, monkeypatch):
+    """`.env.example` tells a reviewer where to put their key.
+
+    Shipping that file with nothing reading it is worse than shipping none: they
+    put the key where they were told, and the harness silently carries on in replay
+    mode. This asserts the file is actually loaded.
+    """
+    from harmony.kernel.config import load_env
+
+    (tmp_path / ".env").write_text(
+        "# a comment\n"
+        "ANTHROPIC_API_KEY=sk-ant-from-file\n"
+        'HARMONY_MODEL="claude-sonnet-4-5"\n'
+        "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("HARMONY_MODEL", raising=False)
+
+    loaded = load_env(tmp_path)
+
+    assert loaded == tmp_path / ".env"
+    assert os.environ["ANTHROPIC_API_KEY"] == "sk-ant-from-file"
+    assert os.environ["HARMONY_MODEL"] == "claude-sonnet-4-5", "quotes should be stripped"
+
+
+def test_an_exported_variable_beats_the_file(tmp_path, monkeypatch):
+    """Somebody running `HARMONY_LLM=live ...` has said what they want, and a config
+    file quietly contradicting them costs an afternoon."""
+    from harmony.kernel.config import load_env
+
+    (tmp_path / ".env").write_text("HARMONY_LLM=replay\n", encoding="utf-8")
+    monkeypatch.setenv("HARMONY_LLM", "live")
+
+    load_env(tmp_path)
+
+    assert os.environ["HARMONY_LLM"] == "live"
+
+
+def test_no_dotenv_is_the_normal_case(tmp_path):
+    """The demo and the tests need no configuration at all."""
+    from harmony.kernel.config import load_env
+
+    assert load_env(tmp_path) is None
+
+
+def test_the_shipped_example_documents_every_variable_the_code_reads():
+    """A variable the code honours but the example never mentions is one nobody
+    will discover."""
+    import re
+    from pathlib import Path
+
+    repo = Path(__file__).resolve().parents[2]
+    example = (repo / ".env.example").read_text(encoding="utf-8")
+
+    read_by_code = set()
+    for path in (repo / "harmony").rglob("*.py"):
+        read_by_code |= set(
+            re.findall(r'environ\.get\(\s*"(HARMONY_[A-Z_]+|ANTHROPIC_[A-Z_]+)"', path.read_text(encoding="utf-8"))
+        )
+
+    undocumented = {name for name in read_by_code if name not in example}
+    assert not undocumented, f".env.example never mentions {sorted(undocumented)}"

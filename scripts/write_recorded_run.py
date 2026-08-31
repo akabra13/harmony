@@ -22,6 +22,10 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
+from harmony.kernel.config import load_env  # noqa: E402
+
+load_env(REPO)  # so `.env` works here exactly as it does for the CLI
+
 from rich.console import Console  # noqa: E402
 
 from harmony.audit.explain import RunExplainer  # noqa: E402

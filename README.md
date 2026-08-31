@@ -47,7 +47,7 @@ harmony serve                         # the same approvals over HTTP, docs at /d
 </details>
 
 ```bash
-.venv/Scripts/python -m pytest        # 112 tests
+.venv/Scripts/python -m pytest        # 116 tests
 .venv/Scripts/harmony eval            # recommendation quality, 6 golden cases
 ```
 
@@ -293,12 +293,20 @@ The shipped cassettes are **authored fixtures, not live recordings.** They come 
 `"source": "fixture"` so you can tell. They exist so `harmony demo all` works on a
 clean checkout with no key and no cost, and so tests are deterministic.
 
-To replace them with genuine recordings:
+To replace them with genuine recordings, put a key in `.env`:
 
 ```bash
-export ANTHROPIC_API_KEY=...
-python scripts/author_cassettes.py     # HARMONY_LLM=record for the live path
-harmony eval --live                    # the golden cases against the real model
+cp .env.example .env
+# edit .env:  ANTHROPIC_API_KEY=sk-ant-...
+```
+
+`.env` is gitignored and is loaded automatically by `harmony` and by the scripts in
+`scripts/`. An exported environment variable always wins over the file, so
+`HARMONY_LLM=live harmony eval` overrides whatever is set there. Then:
+
+```bash
+HARMONY_LLM=record python scripts/author_cassettes.py   # re-record every cassette
+harmony eval --live                                     # golden cases, real model
 ```
 
 The live client is exercised only by a contract test through a fake transport
@@ -336,7 +344,7 @@ run you cannot investigate.
 ## Tests
 
 ```
-tests/unit/           78   the gate, dedupe, resumption, scoping, approvals, the model client
+tests/unit/           82   the gate, dedupe, resumption, scoping, approvals, the model client
 tests/integration/    27   both scenarios end to end, the HTTP surface, the eval suite
 tests/architecture/    7   invariants this README claims
 ```
