@@ -202,6 +202,12 @@ def doctor() -> None:
         "only needed for live or record" if not calls_the_api else "required",
     )
     table.add_row("HARMONY_MODEL", model, "used only when not replaying")
+    workspace = os.environ.get("ANTHROPIC_WORKSPACE_ID", "")
+    table.add_row(
+        "ANTHROPIC_WORKSPACE_ID",
+        workspace or "[dim]not set[/dim]",
+        "required for identity-linked keys",
+    )
 
     env_file = Path(".env")
     table.add_row(

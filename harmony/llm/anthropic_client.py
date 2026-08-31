@@ -13,6 +13,12 @@ run genuinely varies, and that is precisely why the evaluation suite in
 `harmony/eval/` asserts on properties of the decision rather than on its wording.
 `LLMRequest.temperature` is retained as a declaration of intent for clients that
 still honour it; this one does not send it.
+
+**Workspace routing.** An identity-linked API key must say which workspace a
+request acts in, via an ``anthropic-workspace-id`` header. The SDK has no
+parameter for it, so it goes through ``default_headers``. Keys that are not
+identity-linked ignore it, which is why sending it whenever it is configured is
+safe and omitting it is only sometimes safe.
 """
 
 from __future__ import annotations
@@ -25,6 +31,7 @@ from harmony.llm.client import LLMRequest, LLMResponse
 
 DEFAULT_MODEL = "claude-opus-5"
 EMIT_TOOL = "emit_result"
+WORKSPACE_HEADER = "anthropic-workspace-id"
 
 
 def _validated_model(model: str) -> str:
@@ -48,7 +55,13 @@ def _validated_model(model: str) -> str:
 class AnthropicClient:
     """Live Anthropic client. The only component that talks to the network."""
 
-    def __init__(self, *, model: str | None = None, api_key: str | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        model: str | None = None,
+        api_key: str | None = None,
+        workspace_id: str | None = None,
+    ) -> None:
         from anthropic import Anthropic  # imported lazily: replay runs need no SDK
 
         key = api_key or os.environ.get("ANTHROPIC_API_KEY")
@@ -57,28 +70,22 @@ class AnthropicClient:
                 "ANTHROPIC_API_KEY is not set. Run in replay mode (the default) or "
                 "export a key to record fresh cassettes."
             )
-        self._client = Anthropic(api_key=key)
+        workspace = workspace_id or os.environ.get("ANTHROPIC_WORKSPACE_ID") or ""
+        self.workspace_id = workspace.strip()
+        self._client = Anthropic(
+            api_key=key,
+            default_headers=(
+                {WORKSPACE_HEADER: self.workspace_id} if self.workspace_id else None
+            ),
+        )
         self.model = _validated_model(model or os.environ.get("HARMONY_MODEL", DEFAULT_MODEL))
 
     def complete_structured(self, request: LLMRequest) -> LLMResponse:
         started = time.monotonic()
-        message = self._client.messages.create(
-            model=self.model,
-            max_tokens=request.max_tokens,
-            system=request.system,
-            messages=[{"role": "user", "content": request.prompt}],
-            tools=[
-                {
-                    "name": EMIT_TOOL,
-                    "description": (
-                        "Emit the result. This is the only way to answer; "
-                        "every field of the schema must be supplied."
-                    ),
-                    "input_schema": request.output_schema,
-                }
-            ],
-            tool_choice={"type": "tool", "name": EMIT_TOOL},
-        )
+        try:
+            message = self._create(request)
+        except Exception as exc:  # noqa: BLE001 - re-raised, possibly annotated
+            raise self._explain(exc) from exc
         latency_ms = int((time.monotonic() - started) * 1000)
 
         for block in message.content:
@@ -96,4 +103,44 @@ class AnthropicClient:
             "model did not emit the required structured result",
             call_site=request.call_site,
             stop_reason=message.stop_reason,
+        )
+
+    def _explain(self, exc: Exception) -> Exception:
+        """Turn the API's account-shaped 400s into something actionable.
+
+        A stack trace ending in ``_base_client.py`` tells a reader the request
+        failed and nothing about what to change. These two are configuration, not
+        code, and the fix is a line in ``.env``.
+        """
+        message = str(exc)
+        if WORKSPACE_HEADER in message and not self.workspace_id:
+            return RuntimeError(
+                "This API key is identity-linked and must name the workspace it "
+                "acts in. Set ANTHROPIC_WORKSPACE_ID in .env — you can find the id "
+                "in the Anthropic Console under the workspace's settings."
+            )
+        if "model" in message.lower() and "not_found" in message.lower():
+            return RuntimeError(
+                f"The API does not recognise model '{self.model}'. Check "
+                "HARMONY_MODEL in .env; ids take no date suffix."
+            )
+        return exc
+
+    def _create(self, request: LLMRequest):
+        return self._client.messages.create(
+            model=self.model,
+            max_tokens=request.max_tokens,
+            system=request.system,
+            messages=[{"role": "user", "content": request.prompt}],
+            tools=[
+                {
+                    "name": EMIT_TOOL,
+                    "description": (
+                        "Emit the result. This is the only way to answer; "
+                        "every field of the schema must be supplied."
+                    ),
+                    "input_schema": request.output_schema,
+                }
+            ],
+            tool_choice={"type": "tool", "name": EMIT_TOOL},
         )

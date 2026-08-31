@@ -362,3 +362,67 @@ def test_a_date_suffixed_model_id_is_rejected_at_construction(monkeypatch):
 
     monkeypatch.setenv("HARMONY_MODEL", "claude-haiku-4-5")
     assert AnthropicClient().model == "claude-haiku-4-5"
+
+
+def test_a_configured_workspace_is_sent_as_a_header(monkeypatch):
+    """Identity-linked keys must name the workspace each request acts in. The SDK
+    has no parameter for it, so it rides on default_headers."""
+    from harmony.llm.anthropic_client import WORKSPACE_HEADER
+
+    captured: dict[str, Any] = {}
+
+    class _FakeAnthropic:
+        def __init__(self, **kwargs: Any) -> None:
+            captured.update(kwargs)
+            self.messages = _FakeMessages([_tool_use_block({"summary": "s"})])
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    monkeypatch.setenv("ANTHROPIC_WORKSPACE_ID", "wrkspc_123")
+    monkeypatch.setattr("anthropic.Anthropic", _FakeAnthropic)
+
+    client = AnthropicClient()
+
+    assert client.workspace_id == "wrkspc_123"
+    assert captured["default_headers"] == {WORKSPACE_HEADER: "wrkspc_123"}
+
+
+def test_no_workspace_configured_sends_no_header(monkeypatch):
+    """Most keys do not need it, and an empty header is not the same as none."""
+    captured: dict[str, Any] = {}
+
+    class _FakeAnthropic:
+        def __init__(self, **kwargs: Any) -> None:
+            captured.update(kwargs)
+            self.messages = _FakeMessages([])
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    monkeypatch.delenv("ANTHROPIC_WORKSPACE_ID", raising=False)
+    monkeypatch.setattr("anthropic.Anthropic", _FakeAnthropic)
+
+    AnthropicClient()
+
+    assert captured["default_headers"] is None
+
+
+def test_the_workspace_400_is_translated_into_something_actionable(monkeypatch):
+    """A stack trace ending in _base_client.py says the request failed and nothing
+    about what to change. This one is a line in .env."""
+    from harmony.llm.anthropic_client import WORKSPACE_HEADER
+
+    class _Failing:
+        def create(self, **kwargs: Any):
+            raise RuntimeError(
+                f"Error code: 400 - {WORKSPACE_HEADER} is required when "
+                "authenticating with an identity-linked API key"
+            )
+
+    class _FakeAnthropic:
+        def __init__(self, **kwargs: Any) -> None:
+            self.messages = _Failing()
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    monkeypatch.delenv("ANTHROPIC_WORKSPACE_ID", raising=False)
+    monkeypatch.setattr("anthropic.Anthropic", _FakeAnthropic)
+
+    with pytest.raises(RuntimeError, match="ANTHROPIC_WORKSPACE_ID"):
+        AnthropicClient().complete_structured(_request())
