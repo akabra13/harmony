@@ -120,16 +120,43 @@ class Orchestrator:
         detected = self.detect(user_id, detector_ids=detector_ids, payload=payload)
 
         items = [r.item for r in detected if r.should_run]
-        seen = {item.item_id for item in items}
-        items += [
-            item
-            for item in self.h.items.open_for(user_id)
-            if item.run_id is None and item.item_id not in seen
-        ]
+        items += self._stranded(user_id, detector_ids, payload, exclude=items)
 
         return [
             self.run_for_item(item, profile, trigger=trigger, parent_run_id=parent_run_id)
             for item in items
+        ]
+
+    def _stranded(
+        self,
+        user_id: str,
+        detector_ids: list[str] | None,
+        payload: dict[str, Any] | None,
+        *,
+        exclude: list[AttentionItem],
+    ) -> list[AttentionItem]:
+        """Open items this sweep is responsible for that no run was attached to.
+
+        Not applicable to a *targeted* invocation. A follow-up asking "did PO-x
+        arrive?" is answering one question, and sweeping up unrelated stranded items
+        on the way would attribute them to that follow-up — giving them the wrong
+        trigger, the wrong parent run, and an audit trail that says a purchase-order
+        arrival check opened a run about a completely different part.
+
+        Restricted to the detectors actually being run, for the same reason: a sweep
+        is answerable for what it looked at, not for everything left lying around.
+        """
+        if payload:
+            return []
+
+        in_scope = set(detector_ids or self.h.profiles.for_user(user_id).detectors)
+        already = {item.item_id for item in exclude}
+        return [
+            item
+            for item in self.h.items.open_for(user_id)
+            if item.run_id is None
+            and item.item_id not in already
+            and item.detector_id in in_scope
         ]
 
     # --- the loop --------------------------------------------------------------

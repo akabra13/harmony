@@ -181,3 +181,25 @@ def test_an_item_that_already_has_a_run_is_not_run_again(harness, orchestrator):
     orchestrator.detect_and_run("u-101")
 
     assert len(harness.runs.recent(50)) == before, "a second sweep opened duplicate runs"
+
+
+def test_a_targeted_follow_up_does_not_sweep_up_unrelated_items(harness, orchestrator):
+    """A follow-up answers one question.
+
+    Picking up strays on the way would attribute unrelated items to that follow-up
+    — wrong trigger, wrong parent run, and an audit trail claiming a purchase-order
+    arrival check opened a run about a different part entirely.
+    """
+    from harmony.runtime.run import TriggerKind
+
+    stranded = [r.item for r in orchestrator.detect("u-101") if r.should_run]
+    assert stranded, "expected the sweep to leave items with no run"
+
+    runs = orchestrator.detect_and_run(
+        "u-101",
+        detector_ids=["po_arrival_check"],
+        payload={"po_id": "PO-77812", "production_order_id": "4812"},
+        trigger=TriggerKind.FOLLOW_UP,
+    )
+
+    assert all(r.attention_item_id not in {i.item_id for i in stranded} for r in runs)
