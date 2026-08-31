@@ -67,6 +67,13 @@ console = Console()
 DEFAULT_DB = ".harmony/harmony.db"
 
 
+def _catalog_harness() -> Harness:
+    """A harness for inspection only, against an in-memory database."""
+    return Harness.build(
+        load_deployment(), db_path=":memory:", llm=build_client(), seed=True
+    )
+
+
 def _harness(*, db: str | None = None, start_at: str | None = None, seed: bool = False) -> Harness:
     """Build the harness the CLI acts through.
 
@@ -408,12 +415,18 @@ def audit_runs(db: Optional[str] = typer.Option(None)) -> None:
 
 
 # --- catalogs ------------------------------------------------------------------
+#
+# These inspect what is *registered* — tools, detectors, workflows, profiles — all
+# of which come from code and YAML rather than from the database. So they build
+# against an in-memory store and work on a fresh checkout, before `harmony init`
+# has ever run. Making a reviewer create a database to answer "what tools exist?"
+# would be a poor first command to fail on.
 
 
 @catalog_app.command("tools")
-def catalog_tools(db: Optional[str] = typer.Option(None)) -> None:
+def catalog_tools() -> None:
     """Every registered tool, its scopes, and how it is undone."""
-    harness = _harness(db=db)
+    harness = _catalog_harness()
     table = Table("tool", "system", "writes", "scopes", "compensation")
     for spec in harness.tools.all():
         table.add_row(
@@ -427,9 +440,9 @@ def catalog_tools(db: Optional[str] = typer.Option(None)) -> None:
 
 
 @catalog_app.command("detectors")
-def catalog_detectors(db: Optional[str] = typer.Option(None)) -> None:
+def catalog_detectors() -> None:
     """Every registered detector."""
-    harness = _harness(db=db)
+    harness = _catalog_harness()
     table = Table("detector", "systems", "targeted", "description")
     for spec in harness.detectors.all():
         table.add_row(
@@ -442,9 +455,9 @@ def catalog_detectors(db: Optional[str] = typer.Option(None)) -> None:
 
 
 @catalog_app.command("workflows")
-def catalog_workflows(db: Optional[str] = typer.Option(None)) -> None:
+def catalog_workflows() -> None:
     """Every loaded workflow, and the steps it will run."""
-    harness = _harness(db=db)
+    harness = _catalog_harness()
     for definition in harness.workflows.all():
         table = Table("#", "step", "kind", "tool", "undone by", title=definition.key)
         for index, step in enumerate(definition.steps, 1):
@@ -461,9 +474,9 @@ def catalog_workflows(db: Optional[str] = typer.Option(None)) -> None:
 
 
 @catalog_app.command("profiles")
-def catalog_profiles(db: Optional[str] = typer.Option(None)) -> None:
+def catalog_profiles() -> None:
     """Every agent profile and what it binds."""
-    harness = _harness(db=db)
+    harness = _catalog_harness()
     for profile in harness.profiles.all():
         console.print(
             Panel(

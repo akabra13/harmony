@@ -106,14 +106,30 @@ class Orchestrator:
         trigger: TriggerKind = TriggerKind.SCHEDULE,
         parent_run_id: str | None = None,
     ) -> list[AgentRun]:
-        """Detect, then open a run for anything that turned out to be news."""
+        """Detect, then open a run for anything that turned out to be news.
+
+        Also picks up **stranded items**: anything already open for this principal
+        that no run was ever attached to. Those arise whenever detection and
+        planning come apart — a sweep that ran on its own, or a process that died
+        between raising an item and opening a run for it. Without this they would
+        sit open forever, silently suppressing every future detection of the same
+        situation, which is the worst possible failure: the agent goes quiet about
+        a problem precisely because it already noticed it.
+        """
         profile = self.h.profiles.for_user(user_id)
+        detected = self.detect(user_id, detector_ids=detector_ids, payload=payload)
+
+        items = [r.item for r in detected if r.should_run]
+        seen = {item.item_id for item in items}
+        items += [
+            item
+            for item in self.h.items.open_for(user_id)
+            if item.run_id is None and item.item_id not in seen
+        ]
+
         return [
-            self.run_for_item(
-                result.item, profile, trigger=trigger, parent_run_id=parent_run_id
-            )
-            for result in self.detect(user_id, detector_ids=detector_ids, payload=payload)
-            if result.should_run
+            self.run_for_item(item, profile, trigger=trigger, parent_run_id=parent_run_id)
+            for item in items
         ]
 
     # --- the loop --------------------------------------------------------------

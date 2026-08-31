@@ -151,3 +151,33 @@ def test_supersession_records_both_sets_of_findings(harness, dana_session):
     )
     assert event.payload["previous_findings"]["shortfall_qty"] == 120
     assert event.payload["findings"]["shortfall_qty"] == 300
+
+
+def test_an_item_raised_without_a_run_is_picked_up_next_time(harness, orchestrator):
+    """Stranded items must not suppress their own follow-up.
+
+    Detection and planning can come apart — a sweep run on its own, or a process
+    that dies between raising an item and opening a run for it. The item stays
+    open, and every later detection of the same situation is then suppressed
+    against it. The failure mode is the worst available: the agent goes quiet about
+    a problem *because* it already noticed it.
+    """
+    raised = [r for r in orchestrator.detect("u-101") if r.should_run]
+    assert raised, "expected the sweep to find something"
+    assert all(r.item.run_id is None for r in raised), "no run attached yet"
+
+    runs = orchestrator.detect_and_run("u-101")
+
+    assert len(runs) == len(raised), "the stranded items should each get a run"
+    for result in raised:
+        assert harness.items.get(result.item.item_id).run_id is not None
+
+
+def test_an_item_that_already_has_a_run_is_not_run_again(harness, orchestrator):
+    """The other half: picking up strays must not mean re-running everything."""
+    orchestrator.detect_and_run("u-101")
+    before = len(harness.runs.recent(50))
+
+    orchestrator.detect_and_run("u-101")
+
+    assert len(harness.runs.recent(50)) == before, "a second sweep opened duplicate runs"
