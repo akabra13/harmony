@@ -22,7 +22,8 @@ Verified as of this build. Re-check anything you quote.
 | Fact | How to check |
 |---|---|
 | 99 tests pass, including 7 architecture tests | `make test` |
-| 6 golden recommendation-quality cases pass | `make eval` (or `make eval-live`) |
+| 6 golden cases pass in replay *and* live against claude-haiku-4-5 | `harmony eval` / `harmony eval --live` |
+| The 15 shipped cassettes are real recordings | `grep '"source"' cassettes/*.json` |
 | ~9,700 lines in `harmony/`, ~4,800 in `northfield/`, ~2,100 in `tests/` | `find harmony -name '*.py' \| xargs wc -l \| tail -1` |
 | 15 tools, 3 detectors, 4 providers, 4 gate rules, 3 profiles, 1 workflow | `harmony catalog tools` / `detectors` / `profiles` |
 | Approvals work over CLI *and* HTTP, through the same orchestrator | `harmony serve`, then `tests/integration/test_http.py` |
@@ -303,11 +304,14 @@ days*, and one on what replaces it.
   honest one, and it's the same gap DESIGN.md's Part 2 answer turns on — mention it
   here and forward-reference.
 
-Also worth a line: **the cassettes shipped are authored fixtures, not live
-recordings** (`northfield/demo/scripted_answers.py`, and each cassette records
-`"source": "fixture"`). `make record` with a real key replaces them with genuine
-recordings through the identical code path. Say this plainly — a reviewer who
-discovers it themselves will wonder what else was oversold.
+**The live path found three real bugs, and that is worth a paragraph of its own.**
+Running against the real API turned up: `temperature` no longer being accepted by
+current models (and a contract-test fake so permissive it swallowed the argument
+the SDK rejects), identity-linked keys needing an `ANTHROPIC_WORKSPACE_ID` header,
+and — the interesting one — the planner omitting the notification step in Scenario
+B. The last was a genuine prompt weakness the eval caught: the fix was to teach two
+general principles (propose the *complete* response; order irreversible steps last)
+rather than to patch the case. All six cases pass live afterwards.
 
 ---
 

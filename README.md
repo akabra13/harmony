@@ -42,7 +42,7 @@ harmony approvals approve APR-xxxx    # decide, and execute
 harmony clock advance 2026-09-04      # fires the scheduled arrival check
 harmony audit explain RUN-xxxx        # reconstruct the run from the ledger
 harmony catalog tools                 # what is registered
-harmony doctor                        # am I calling the real model, or replaying?
+harmony serve                         # the harmony doctor                        # am I calling the real model, or replaying?
 harmony serve                         # the same approvals over HTTP, docs at /docs
 ```
 </details>
@@ -294,11 +294,7 @@ whether a key is set, which model, and where the cassettes came from. After a ru
 `harmony audit explain <run>` shows every model call with the model name and token
 counts, so `model=scripted-fixture, in=0, out=0` and
 `model=claude-sonnet-4-5, in=3412, out=210` are told apart at a glance.
-
-The shipped cassettes are **authored fixtures, not live recordings.** They come from
-`northfield/demo/scripted_answers.py`, and each cassette records
-`"source": "fixture"` so you can tell. They exist so `harmony demo all` works on a
-clean checkout with no key and no cost, and so tests are deterministic.
+e deterministic.
 
 To replace them with genuine recordings, put a key in `.env`:
 

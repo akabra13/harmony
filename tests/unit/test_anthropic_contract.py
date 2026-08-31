@@ -1,16 +1,17 @@
 """The live model client's contract, checked without a network call.
 
-**This is not a substitute for running against the real API.** The repo ships
-cassettes authored from scripted fixtures, so until `make record` is run with a key
-the live path has never actually executed. What these tests do is remove the most
-likely reasons it would fail on first contact:
+These complement running against the real API rather than replacing it — the
+shipped cassettes are recordings, and `harmony eval --live` exercises the live path
+end to end. What these add is a guard that costs no tokens, catching the request
+shape breaking between live runs:
 
 * a generated JSON Schema the API rejects as a tool ``input_schema``;
 * a request that forgets to force the tool, letting the model reply with prose;
 * a response parser that misses the ``tool_use`` block.
 
-Each of those is a silent bug in replay and an immediate 400 or a crash live. A
-fake transport catches all three for the price of no tokens.
+Each is silent in replay and fatal live. The `temperature` parameter that the API
+stopped accepting is exactly this class of bug, and it reached a live run because
+an earlier version of the fake here accepted any keyword at all.
 """
 
 from __future__ import annotations

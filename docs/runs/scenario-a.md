@@ -43,27 +43,27 @@ narrative.
 
 - **2026-09-02 08:00** · `u-101` — asked the model: mail.extract_commitment
   - `call_site`: mail.extract_commitment
-  - `model`: scripted-fixture
-  - `input_tokens`: 0
-  - `output_tokens`: 0
+  - `model`: claude-haiku-4-5-20251001
+  - `input_tokens`: 1371
+  - `output_tokens`: 146
 - **2026-09-02 08:00** · `u-101` — asked the model: planner
   - `call_site`: planner
-  - `model`: scripted-fixture
-  - `input_tokens`: 0
-  - `output_tokens`: 0
-- **2026-09-02 08:00** · `u-101` — Part P-4471 will likely cause production order 4812 to miss its scheduled start. Kestrel says PO-77812 now arrives Tuesday 9/8, a day after the build begins. I can move the order to an approved alternate supplier and notify production. Want me to proceed?
+  - `model`: claude-haiku-4-5-20251001
+  - `input_tokens`: 9220
+  - `output_tokens`: 1385
+- **2026-09-02 08:00** · `u-101` — PO-77812 will arrive one day after production 4812 starts (Sept 8 vs Sept 7); reroute the order to Meridian Drives, who can deliver P-4471 by Sept 7 with the fastest lead time (2 days) and highest reliability (94% on-time rate).
   - `action_kind`: workflow
-  - `digest`: 993a60877bcc
+  - `digest`: fc3365d76458
 - **2026-09-02 08:00** · `u-101` — asked the model: workflow.po_reroute.choose_supplier
   - `call_site`: workflow.po_reroute.choose_supplier
-  - `model`: scripted-fixture
-  - `input_tokens`: 0
-  - `output_tokens`: 0
+  - `model`: claude-haiku-4-5-20251001
+  - `input_tokens`: 991
+  - `output_tokens`: 134
 - **2026-09-02 08:00** · `u-101` — asked the model: workflow.po_reroute.draft_notification
   - `call_site`: workflow.po_reroute.draft_notification
-  - `model`: scripted-fixture
-  - `input_tokens`: 0
-  - `output_tokens`: 0
+  - `model`: claude-haiku-4-5-20251001
+  - `input_tokens`: 878
+  - `output_tokens`: 136
 
 ## What the agent was allowed to do
 
@@ -74,7 +74,7 @@ narrative.
 - **2026-09-02 08:00** · `u-101` — [human_approval_for_writes] require_approval: plan writes to ['erp', 'harmony', 'production']; a human must agree
   - `verdict`: require_approval
   - `approver_id`: u-101
-- **2026-09-02 08:00** · `u-101` — [po_value_threshold] allow: worst case £18,600.00 is within Dana Whitfield (u-101)'s £25,000.00 limit
+- **2026-09-02 08:00** · `u-101` — [po_value_threshold] allow: worst case £5,580.00 is within Dana Whitfield (u-101)'s £25,000.00 limit
   - `verdict`: allow
 - **2026-09-02 08:00** · `u-101` — [scope] allow: holds all 5 required scope(s)
   - `verdict`: allow
@@ -86,25 +86,25 @@ narrative.
 
 *The request, any escalation, and the decision.*
 
-- **2026-09-02 08:00** · `u-101` — asked Dana Whitfield (u-101) to approve: Part P-4471 will likely cause production order 4812 to miss its scheduled start. Kestrel says PO-77812 now arrives Tuesday 9/8, a day after the build begins. I can move the order to an approved alternate supplier and notify production. Want me to proceed?
-  - `approval_id`: APR-c06b
+- **2026-09-02 08:00** · `u-101` — asked Dana Whitfield (u-101) to approve: PO-77812 will arrive one day after production 4812 starts (Sept 8 vs Sept 7); reroute the order to Meridian Drives, who can deliver P-4471 by Sept 7 with the fastest lead time (2 days) and highest reliability (94% on-time rate).
+  - `approval_id`: APR-7227
   - `approver_id`: u-101
-- **2026-09-02 08:00** · `u-101` — Dana Whitfield (u-101) approved APR-c06b: Approved — keep Line 2 running.
-  - `approval_id`: APR-c06b
+- **2026-09-02 08:00** · `u-101` — Dana Whitfield (u-101) approved APR-7227: Approved — keep Line 2 running.
+  - `approval_id`: APR-7227
   - `decided_by`: u-101
 
 ## What actually happened in each system
 
 *Every effect, every rollback, and every piece of work deferred to later.*
 
-- **2026-09-02 08:00** · `u-101` — will re-check approval APR-c06b at end of day
+- **2026-09-02 08:00** · `u-101` — will re-check approval APR-7227 at end of day
   - `kind`: approval.escalate
   - `fire_at`: 2026-09-02T23:59:59
 - **2026-09-02 08:00** · `u-101` — entering po_reroute@v3: Replace an at-risk purchase order with one from an alternate approved supplier who can deliver before production starts, then tell production and schedule a check that the goods actually arrive.
 
   - `workflow`: po_reroute
   - `version`: 3
-  - `params`: {'at_risk_po_id': 'PO-77812', 'part_id': 'P-4471', 'production_order_id': '4812', 'required_on_site_by': '2026-09-07', 'qty': 400, 'supervisor_id': 'u-301'}
+  - `params`: {'at_risk_po_id': 'PO-77812', 'part_id': 'P-4471', 'production_order_id': '4812', 'required_on_site_by': '2026-09-07', 'qty': 120, 'supervisor_id': 'u-301'}
 - **2026-09-02 08:00** · `u-101` — step 'find_approved_suppliers': Find suppliers qualified to supply this part
 - **2026-09-02 08:00** · `u-101` — Find suppliers qualified to supply this part
   - `tool`: erp.list_approved_suppliers_for_part
@@ -130,23 +130,23 @@ narrative.
 - **2026-09-02 08:00** · `u-101` — step 'choose_supplier': Choose among the qualified, in-time suppliers and justify the choice
 - **2026-09-02 08:00** · `u-101` — step 'choose_supplier' completed
   - `step_id`: choose_supplier
-  - `output`: {'supplier_id': 'S-Z', 'justification': 'Meridian delivers in two days against a five-day window and has a 94% on-time record, the best of the qualified suppli…
+  - `output`: {'supplier_id': 'S-Z', 'justification': 'Meridian Drives (S-Z) is the only qualified supplier available for this urgent line-stop situation, with an excellent …
 - **2026-09-02 08:00** · `u-101` — step 'create_replacement_po': Raise the replacement purchase order
 - **2026-09-02 08:00** · `u-101` — Raise the replacement purchase order
   - `tool`: erp.create_purchase_order
   - `writes`: True
-  - `params`: {'part_id': 'P-4471', 'supplier_id': 'S-Z', 'qty': 400, 'need_by': '2026-09-07', 'replaces_po': 'PO-77812', 'reason': 'Meridian delivers in two days against a …
+  - `params`: {'part_id': 'P-4471', 'supplier_id': 'S-Z', 'qty': 120, 'need_by': '2026-09-07', 'replaces_po': 'PO-77812', 'reason': 'Meridian Drives (S-Z) is the only qualif…
 - **2026-09-02 08:00** · `u-101` — erp.create_purchase_order completed
   - `tool`: erp.create_purchase_order
-  - `output`: {'po_id': 'PO-b5cce', 'part_id': 'P-4471', 'supplier_id': 'S-Z', 'qty': 400, 'unit_price': 46.5, 'total_value': 18600.0, 'promised_date': '2026-09-04', 'status…
+  - `output`: {'po_id': 'PO-b7905', 'part_id': 'P-4471', 'supplier_id': 'S-Z', 'qty': 120, 'unit_price': 46.5, 'total_value': 5580.0, 'promised_date': '2026-09-04', 'status'…
 - **2026-09-02 08:00** · `u-101` — step 'create_replacement_po' completed
   - `step_id`: create_replacement_po
-  - `output`: {'po_id': 'PO-b5cce', 'part_id': 'P-4471', 'supplier_id': 'S-Z', 'qty': 400, 'unit_price': 46.5, 'total_value': 18600.0, 'promised_date': '2026-09-04', 'status…
+  - `output`: {'po_id': 'PO-b7905', 'part_id': 'P-4471', 'supplier_id': 'S-Z', 'qty': 120, 'unit_price': 46.5, 'total_value': 5580.0, 'promised_date': '2026-09-04', 'status'…
 - **2026-09-02 08:00** · `u-101` — step 'reduce_original_po': Cancel the original purchase order now that it is replaced
 - **2026-09-02 08:00** · `u-101` — Cancel the original purchase order now that it is replaced
   - `tool`: erp.cancel_or_reduce_purchase_order
   - `writes`: True
-  - `params`: {'po_id': 'PO-77812', 'new_qty': 0, 'reason': 'replaced by PO-b5cce'}
+  - `params`: {'po_id': 'PO-77812', 'new_qty': 0, 'reason': 'replaced by PO-b7905'}
 - **2026-09-02 08:00** · `u-101` — erp.cancel_or_reduce_purchase_order completed
   - `tool`: erp.cancel_or_reduce_purchase_order
   - `output`: {'po_id': 'PO-77812', 'previous_status': 'open', 'previous_qty': 400, 'status': 'cancelled', 'qty': 0, 'action': 'cancelled'}
@@ -156,29 +156,29 @@ narrative.
 - **2026-09-02 08:00** · `u-101` — step 'draft_notification': Draft the message to the production supervisor
 - **2026-09-02 08:00** · `u-101` — step 'draft_notification' completed
   - `step_id`: draft_notification
-  - `output`: {'subject': 'Supply change affecting production order 4812', 'body': 'Production order 4812 is affected by a supplier delay on P-4471.\n\nPO-77812 has been can…
+  - `output`: {'subject': 'Production Order 4812 – Supplier Change for Part P-4471', 'body': 'Production Order 4812 (Part P-4471, Qty 120):\n\nPurchase order PO-77812 has be…
 - **2026-09-02 08:00** · `u-101` — step 'notify_production': Tell the production supervisor
 - **2026-09-02 08:00** · `u-101` — Tell the production supervisor
   - `tool`: production.notify_supervisor
   - `writes`: True
-  - `params`: {'supervisor_id': 'u-301', 'subject': 'Supply change affecting production order 4812', 'body': 'Production order 4812 is affected by a supplier delay on P-4471…
+  - `params`: {'supervisor_id': 'u-301', 'subject': 'Production Order 4812 – Supplier Change for Part P-4471', 'body': 'Production Order 4812 (Part P-4471, Qty 120):\n\nPurc…
 - **2026-09-02 08:00** · `u-101` — production.notify_supervisor completed
   - `tool`: production.notify_supervisor
-  - `output`: {'notification_id': 'NTF-b22c', 'recipient_id': 'u-301', 'delivered': True}
+  - `output`: {'notification_id': 'NTF-b734', 'recipient_id': 'u-301', 'delivered': True}
 - **2026-09-02 08:00** · `u-101` — step 'notify_production' completed
   - `step_id`: notify_production
-  - `output`: {'notification_id': 'NTF-b22c', 'recipient_id': 'u-301', 'delivered': True}
+  - `output`: {'notification_id': 'NTF-b734', 'recipient_id': 'u-301', 'delivered': True}
 - **2026-09-02 08:00** · `u-101` — step 'schedule_arrival_check': Schedule a check that the replacement shipment actually arrives
 - **2026-09-02 08:00** · `u-101` — Schedule a check that the replacement shipment actually arrives
   - `tool`: schedule.create_followup
   - `writes`: True
-  - `params`: {'detector': 'po_arrival_check', 'fire_at': '2026-09-04', 'reason': 'confirm the replacement for PO-77812 arrived as promised', 'payload': {'po_id': 'PO-b5cce'…
+  - `params`: {'detector': 'po_arrival_check', 'fire_at': '2026-09-04', 'reason': 'confirm the replacement for PO-77812 arrived as promised', 'payload': {'po_id': 'PO-b7905'…
 - **2026-09-02 08:00** · `u-101` — schedule.create_followup completed
   - `tool`: schedule.create_followup
-  - `output`: {'task_id': 'TSK-9fa0b8', 'fire_at': '2026-09-04', 'detector': 'po_arrival_check', 'already_scheduled': False}
+  - `output`: {'task_id': 'TSK-9c6ebd', 'fire_at': '2026-09-04', 'detector': 'po_arrival_check', 'already_scheduled': False}
 - **2026-09-02 08:00** · `u-101` — step 'schedule_arrival_check' completed
   - `step_id`: schedule_arrival_check
-  - `output`: {'task_id': 'TSK-9fa0b8', 'fire_at': '2026-09-04', 'detector': 'po_arrival_check', 'already_scheduled': False}
+  - `output`: {'task_id': 'TSK-9c6ebd', 'fire_at': '2026-09-04', 'detector': 'po_arrival_check', 'already_scheduled': False}
 - **2026-09-02 08:00** · `u-101` — po_reroute@v3 completed all 8 steps
 - **2026-09-04 08:00** · `system:harmony` — firing approval.escalate
 - **2026-09-04 08:00** · `system:harmony` — firing detector.run
@@ -200,9 +200,9 @@ scheduled. It went through detection, planning, gating and approval
 exactly as the first one did — a follow-up is a targeted detection, not a
 special mechanism.
 
-# Run `RUN-21fb09`
+# Run `RUN-94c9ff`
 
-> opened a run for: PO-b5cce has not been received; production order 4812 is at risk
+> opened a run for: PO-b7905 has not been received; production order 4812 is at risk
 > acting for: u-101   profile: purchasing_manager
 > simulated time: 2026-09-04 08:00 → 2026-09-04 08:00
 > events: 19
@@ -211,7 +211,7 @@ special mechanism.
 
 *Detection, the context it gathered, and what it was not permitted to read.*
 
-- **2026-09-04 08:00** · `u-101` — gathering context for PO-b5cce has not been received; production order 4812 is at risk
+- **2026-09-04 08:00** · `u-101` — gathering context for PO-b7905 has not been received; production order 4812 is at risk
 - **2026-09-04 08:00** · `u-101` — read 9 record(s) from erp
   - `counts`: {'parts': 1, 'suppliers': 6, 'purchase_orders': 1, 'production_orders': 1, 'goods_receipts': 0}
 - **2026-09-04 08:00** · `u-101` — read 6 record(s) from mail
@@ -229,27 +229,27 @@ special mechanism.
 
 - **2026-09-04 08:00** · `u-101` — asked the model: planner
   - `call_site`: planner
-  - `model`: scripted-fixture
-  - `input_tokens`: 0
-  - `output_tokens`: 0
-- **2026-09-04 08:00** · `u-101` — The replacement order for P-4471 has not been received on its promised date. Production order 4812 still has three days of margin. I can warn the line and re-check tomorrow rather than reroute again.
-  - `action_kind`: tools
-  - `digest`: 267aebb4259f
+  - `model`: claude-haiku-4-5-20251001
+  - `input_tokens`: 8933
+  - `output_tokens`: 1790
+- **2026-09-04 08:00** · `u-101` — PO-b7905 from Meridian Drives (S-Z) has not arrived on its promised date of today (2026-09-04), placing production order 4812 at critical risk; reroute the order to Apex Rapid Supply, which can deliver NEMA 23 steppers next day at lower cost ($38 vs $46.50/unit).
+  - `action_kind`: workflow
+  - `digest`: 11a3b29d91f8
 
 ## What the agent was allowed to do
 
 *Each policy rule, its verdict, and the inputs it used.*
 
-- **2026-09-04 08:00** · `u-101` — [approved_supplier] allow: every named supplier is qualified
+- **2026-09-04 08:00** · `u-101` — [approved_supplier] allow: supplier is chosen inside a declared workflow, from a pre-qualified list
   - `verdict`: allow
-- **2026-09-04 08:00** · `u-101` — [human_approval_for_writes] require_approval: plan writes to ['harmony', 'production']; a human must agree
+- **2026-09-04 08:00** · `u-101` — [human_approval_for_writes] require_approval: plan writes to ['erp', 'harmony', 'production']; a human must agree
   - `verdict`: require_approval
   - `approver_id`: u-101
-- **2026-09-04 08:00** · `u-101` — [po_value_threshold] allow: plan raises no purchase order
+- **2026-09-04 08:00** · `u-101` — [po_value_threshold] allow: worst case £5,580.00 is within Dana Whitfield (u-101)'s £25,000.00 limit
   - `verdict`: allow
-- **2026-09-04 08:00** · `u-101` — [scope] allow: holds all 2 required scope(s)
+- **2026-09-04 08:00** · `u-101` — [scope] allow: holds all 5 required scope(s)
   - `verdict`: allow
-- **2026-09-04 08:00** · `u-101` — gate decision: require_approval — plan writes to ['harmony', 'production']; a human must agree
+- **2026-09-04 08:00** · `u-101` — gate decision: require_approval — plan writes to ['erp', 'harmony', 'production']; a human must agree
   - `verdict`: require_approval
   - `approver_id`: u-101
 
@@ -257,15 +257,15 @@ special mechanism.
 
 *The request, any escalation, and the decision.*
 
-- **2026-09-04 08:00** · `u-101` — asked Dana Whitfield (u-101) to approve: The replacement order for P-4471 has not been received on its promised date. Production order 4812 still has three days of margin. I can warn the line and re-check tomorrow rather than reroute again.
-  - `approval_id`: APR-88cb
+- **2026-09-04 08:00** · `u-101` — asked Dana Whitfield (u-101) to approve: PO-b7905 from Meridian Drives (S-Z) has not arrived on its promised date of today (2026-09-04), placing production order 4812 at critical risk; reroute the order to Apex Rapid Supply, which can deliver NEMA 23 steppers next day at lower cost ($38 vs $46.50/unit).
+  - `approval_id`: APR-b294
   - `approver_id`: u-101
 
 ## What actually happened in each system
 
 *Every effect, every rollback, and every piece of work deferred to later.*
 
-- **2026-09-04 08:00** · `u-101` — will re-check approval APR-88cb at end of day
+- **2026-09-04 08:00** · `u-101` — will re-check approval APR-b294 at end of day
   - `kind`: approval.escalate
   - `fire_at`: 2026-09-04T23:59:59
 

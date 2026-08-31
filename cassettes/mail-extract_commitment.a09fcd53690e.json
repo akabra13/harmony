@@ -67,18 +67,18 @@
     "system": "You extract delivery commitments from supplier correspondence. You do not judge whether a delay matters, you do not recommend anything, and you do not perform calculations. Read the message and report what the supplier committed to.\n\nIf the message revises a delivery date for one of the listed purchase orders, report that order's id and the revised arrival date at our site. Watch the distinction between a ship date and an arrival date: if the sender gives both, the arrival date is the one we need.\n\nIf the message confirms an existing date, revises nothing, or concerns no listed purchase order, set revises_delivery to false and leave the other fields empty. Confirming that a shipment is on schedule is not a revision.\n\nQuote the exact sentence your date came from, verbatim."
   },
   "response": {
-    "input_tokens": 0,
-    "latency_ms": 0,
-    "model": "scripted-fixture",
+    "input_tokens": 1280,
+    "latency_ms": 1359,
+    "model": "claude-haiku-4-5-20251001",
     "output": {
-      "confidence": 0.92,
+      "confidence": 0.95,
       "po_id": "PO-77820",
       "revised_arrival_date": "2026-09-11",
       "revises_delivery": true,
       "verbatim_quote": "We are now looking at the 11th rather than the 5th."
     },
-    "output_tokens": 0,
-    "stop_reason": ""
+    "output_tokens": 139,
+    "stop_reason": "tool_use"
   },
-  "source": "fixture"
+  "source": "recorded"
 }
