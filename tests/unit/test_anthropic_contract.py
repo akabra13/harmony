@@ -16,6 +16,7 @@ fake transport catches all three for the price of no tokens.
 from __future__ import annotations
 
 import os
+import re
 from typing import Any
 
 import pytest
@@ -82,7 +83,15 @@ def test_the_constrained_choice_reaches_the_schema_as_an_enum():
 
 
 class _FakeMessages:
-    """Stands in for ``anthropic.Anthropic().messages``."""
+    """Stands in for ``anthropic.Anthropic().messages``.
+
+    It validates every keyword against the *real* SDK signature before answering.
+    An earlier version of this fake accepted ``**kwargs`` unconditionally, and so
+    happily swallowed a ``temperature=`` argument that the installed SDK had
+    dropped — the tests passed and the first live call died with a TypeError. A
+    fake more permissive than the thing it stands in for is worse than no fake: it
+    converts a loud failure into a false pass.
+    """
 
     def __init__(self, content: list[Any], stop_reason: str = "tool_use") -> None:
         self.content = content
@@ -90,6 +99,7 @@ class _FakeMessages:
         self.received: dict[str, Any] = {}
 
     def create(self, **kwargs: Any):
+        _assert_accepted_by_the_sdk(kwargs)
         self.received = kwargs
         return type(
             "Message",
@@ -103,6 +113,22 @@ class _FakeMessages:
         )()
 
 
+def _assert_accepted_by_the_sdk(kwargs: dict[str, Any]) -> None:
+    """Reject any keyword the installed SDK's Messages.create does not accept."""
+    import inspect
+
+    from anthropic.resources.messages import Messages
+
+    accepted = set(inspect.signature(Messages.create).parameters)
+    unknown = sorted(set(kwargs) - accepted)
+    assert not unknown, (
+        f"the request passes {unknown}, which anthropic "
+        f"{__import__('anthropic').__version__} does not accept. "
+        "Sampling parameters were removed from current models; see "
+        "harmony/llm/anthropic_client.py."
+    )
+
+
 def _tool_use_block(payload: dict[str, Any], name: str = EMIT_TOOL):
     return type("Block", (), {"type": "tool_use", "name": name, "input": payload})()
 
@@ -110,7 +136,7 @@ def _tool_use_block(payload: dict[str, Any], name: str = EMIT_TOOL):
 def _client(messages: _FakeMessages) -> AnthropicClient:
     client = AnthropicClient.__new__(AnthropicClient)
     client._client = type("Anthropic", (), {"messages": messages})()
-    client.model = "claude-sonnet-4-5"
+    client.model = "claude-opus-5"
     return client
 
 
@@ -145,7 +171,30 @@ def test_the_request_carries_the_system_prompt_and_settings():
     assert sent["system"] == "you are a planner"
     assert sent["messages"] == [{"role": "user", "content": "what should we do?"}]
     assert sent["max_tokens"] == 1234
-    assert sent["temperature"] == 0.0, "a harness whose advice varies cannot be evaluated"
+
+
+def test_the_request_sends_no_sampling_parameters():
+    """They were removed from current models and are rejected outright.
+
+    Determinism comes from replay, not from pinning temperature to zero — which is
+    why the evaluation suite asserts on properties of the decision rather than on
+    its wording.
+    """
+    messages = _FakeMessages([_tool_use_block({"summary": "s"})])
+    _client(messages).complete_structured(_request())
+
+    for removed in ("temperature", "top_p", "top_k"):
+        assert removed not in messages.received
+
+
+def test_the_default_model_is_one_the_api_still_serves():
+    """A stale default is a first-call 404 for anyone who does not set the env var."""
+    from harmony.llm.anthropic_client import DEFAULT_MODEL
+
+    assert DEFAULT_MODEL == "claude-opus-5"
+    assert not re.search(r"-\d{8}$", DEFAULT_MODEL), (
+        "model ids take no date suffix"
+    )
 
 
 def test_the_tool_use_block_is_parsed_into_the_response():
@@ -206,7 +255,7 @@ def test_a_dotenv_file_reaches_the_process(tmp_path, monkeypatch):
     (tmp_path / ".env").write_text(
         "# a comment\n"
         "ANTHROPIC_API_KEY=sk-ant-from-file\n"
-        'HARMONY_MODEL="claude-sonnet-4-5"\n'
+        'HARMONY_MODEL="claude-opus-5"\n'
         "\n",
         encoding="utf-8",
     )
@@ -217,7 +266,7 @@ def test_a_dotenv_file_reaches_the_process(tmp_path, monkeypatch):
 
     assert loaded == tmp_path / ".env"
     assert os.environ["ANTHROPIC_API_KEY"] == "sk-ant-from-file"
-    assert os.environ["HARMONY_MODEL"] == "claude-sonnet-4-5", "quotes should be stripped"
+    assert os.environ["HARMONY_MODEL"] == "claude-opus-5", "quotes should be stripped"
 
 
 def test_an_exported_variable_beats_the_file(tmp_path, monkeypatch):
@@ -297,3 +346,19 @@ def test_doctor_fails_when_live_is_configured_without_a_key(monkeypatch):
 
     assert result.exit_code == 1
     assert "ANTHROPIC_API_KEY" in result.stdout
+
+
+def test_a_date_suffixed_model_id_is_rejected_at_construction(monkeypatch):
+    """`claude-haiku-4-5-20251001` is a stale convention that still looks plausible.
+
+    Caught here rather than as a 404 partway through a scenario, where the error
+    names the HTTP status and not the cause.
+    """
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    monkeypatch.setenv("HARMONY_MODEL", "claude-haiku-4-5-20251001")
+
+    with pytest.raises(RuntimeError, match="date suffix"):
+        AnthropicClient()
+
+    monkeypatch.setenv("HARMONY_MODEL", "claude-haiku-4-5")
+    assert AnthropicClient().model == "claude-haiku-4-5"

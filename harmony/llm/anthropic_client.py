@@ -4,6 +4,15 @@ Structured output is obtained by giving the model exactly one tool whose input
 schema is the answer we want, and forcing its use. The model cannot reply with
 prose because prose is not an available move — which is a stronger guarantee than
 asking politely for JSON and parsing whatever arrives.
+
+**No sampling parameters.** `temperature`, `top_p` and `top_k` were removed from
+current Claude models — they are rejected outright — so determinism cannot come
+from pinning temperature to zero. It comes from replay: `cassettes/` freezes the
+model's side, which is what makes tests and the recorded run reproducible. A live
+run genuinely varies, and that is precisely why the evaluation suite in
+`harmony/eval/` asserts on properties of the decision rather than on its wording.
+`LLMRequest.temperature` is retained as a declaration of intent for clients that
+still honour it; this one does not send it.
 """
 
 from __future__ import annotations
@@ -14,8 +23,26 @@ import time
 from harmony.kernel.errors import LLMOutputInvalid
 from harmony.llm.client import LLMRequest, LLMResponse
 
-DEFAULT_MODEL = "claude-sonnet-4-5"
+DEFAULT_MODEL = "claude-opus-5"
 EMIT_TOOL = "emit_result"
+
+
+def _validated_model(model: str) -> str:
+    """Reject a model id with a date suffix.
+
+    Current ids are complete as they stand — ``claude-haiku-4-5``, not
+    ``claude-haiku-4-5-20251001``. The dated form is a stale convention that still
+    looks plausible, and the failure it produces is a 404 partway through a
+    scenario rather than anything that names the cause.
+    """
+    import re
+
+    if re.search(r"-\d{8}$", model):
+        raise RuntimeError(
+            f"HARMONY_MODEL is '{model}', which carries a date suffix. "
+            f"Current model ids take none — use '{re.sub(r'-[0-9]{8}$', '', model)}'."
+        )
+    return model
 
 
 class AnthropicClient:
@@ -31,14 +58,13 @@ class AnthropicClient:
                 "export a key to record fresh cassettes."
             )
         self._client = Anthropic(api_key=key)
-        self.model = model or os.environ.get("HARMONY_MODEL", DEFAULT_MODEL)
+        self.model = _validated_model(model or os.environ.get("HARMONY_MODEL", DEFAULT_MODEL))
 
     def complete_structured(self, request: LLMRequest) -> LLMResponse:
         started = time.monotonic()
         message = self._client.messages.create(
             model=self.model,
             max_tokens=request.max_tokens,
-            temperature=request.temperature,
             system=request.system,
             messages=[{"role": "user", "content": request.prompt}],
             tools=[

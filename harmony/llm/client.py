@@ -44,8 +44,10 @@ class LLMRequest(BaseModel):
     output_schema: dict[str, Any]
     max_tokens: int = 2048
     temperature: float = 0.0
-    """Zero everywhere. A harness whose recommendations vary run to run cannot be
-    evaluated for regressions, and the variance buys nothing here."""
+    """Declared intent, not sent to current Claude models — sampling parameters were
+    removed from them and are rejected. Kept because a provider that still honours
+    one should get zero: variance buys nothing at any of these call sites.
+    Reproducibility comes from replay instead; see harmony/llm/replay.py."""
 
     def cassette_key(self) -> str:
         """Stable identity of this exchange, for record/replay."""

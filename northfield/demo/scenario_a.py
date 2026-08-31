@@ -46,7 +46,7 @@ def run_scenario_a(
     act(
         console,
         "1",
-        "The position on Monday morning",
+        f"The position on {harness.clock.now():%A} morning",
         f"Simulated time is {harness.clock.now():%A %d %B %Y, %H:%M}. Nobody has asked "
         "the agent anything.",
     )
@@ -310,7 +310,8 @@ def run_scenario_a(
 
         fired = Worker(harness).drain()
         for task in fired:
-            note(console, f"fired {task.kind} — {task.payload.get('detector', '')}")
+            detail = task.payload.get("detector")
+            note(console, f"fired {task.kind}" + (f" — {detail}" if detail else ""))
 
         follow_up_runs = [
             r

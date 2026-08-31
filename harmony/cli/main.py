@@ -180,11 +180,12 @@ def doctor() -> None:
     """
     import json
 
+    from harmony.llm.anthropic_client import DEFAULT_MODEL
     from harmony.llm.replay import DEFAULT_CASSETTE_DIR, CassetteLibrary  # noqa: F401
 
     mode = os.environ.get("HARMONY_LLM", "replay").lower()
     key = os.environ.get("ANTHROPIC_API_KEY", "")
-    model = os.environ.get("HARMONY_MODEL", "claude-sonnet-4-5")
+    model = os.environ.get("HARMONY_MODEL", DEFAULT_MODEL)
 
     calls_the_api = mode in ("live", "record")
     verdict = (
