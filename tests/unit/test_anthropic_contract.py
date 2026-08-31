@@ -257,3 +257,43 @@ def test_the_shipped_example_documents_every_variable_the_code_reads():
 
     undocumented = {name for name in read_by_code if name not in example}
     assert not undocumented, f".env.example never mentions {sorted(undocumented)}"
+
+
+def test_doctor_distinguishes_replay_from_live(monkeypatch, capsys):
+    """"Am I actually calling the API?" must be answerable without reading source.
+
+    Getting it wrong in either direction is expensive: you either believe you
+    validated the prompts when you replayed a fixture, or you spend money believing
+    you are offline.
+    """
+    from typer.testing import CliRunner
+
+    from harmony.cli.main import app
+
+    runner = CliRunner()
+
+    monkeypatch.setenv("HARMONY_LLM", "replay")
+    replay = runner.invoke(app, ["doctor"])
+    assert replay.exit_code == 0
+    assert "REPLAY" in replay.stdout
+
+    monkeypatch.setenv("HARMONY_LLM", "live")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    live = runner.invoke(app, ["doctor"])
+    assert live.exit_code == 0
+    assert "LIVE" in live.stdout
+
+
+def test_doctor_fails_when_live_is_configured_without_a_key(monkeypatch):
+    """Better to fail here than on the first call, halfway through a scenario."""
+    from typer.testing import CliRunner
+
+    from harmony.cli.main import app
+
+    monkeypatch.setenv("HARMONY_LLM", "live")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+
+    result = CliRunner().invoke(app, ["doctor"])
+
+    assert result.exit_code == 1
+    assert "ANTHROPIC_API_KEY" in result.stdout

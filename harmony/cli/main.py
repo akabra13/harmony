@@ -169,6 +169,84 @@ def status(db: Optional[str] = typer.Option(None)) -> None:
     )
 
 
+@app.command()
+def doctor() -> None:
+    """Report the effective configuration — chiefly, whether the model is real.
+
+    "Am I actually calling the API?" is a question that should never require
+    reading source. Getting it wrong in either direction is expensive: you either
+    think you validated the prompts when you replayed a fixture, or you spend money
+    believing you are offline.
+    """
+    import json
+
+    from harmony.llm.replay import DEFAULT_CASSETTE_DIR, CassetteLibrary  # noqa: F401
+
+    mode = os.environ.get("HARMONY_LLM", "replay").lower()
+    key = os.environ.get("ANTHROPIC_API_KEY", "")
+    model = os.environ.get("HARMONY_MODEL", "claude-sonnet-4-5")
+
+    calls_the_api = mode in ("live", "record")
+    verdict = (
+        "[bold green]LIVE[/bold green] — runs will call the API and cost money"
+        if calls_the_api
+        else "[bold]REPLAY[/bold] — no network, no cost; answers come from cassettes/"
+    )
+
+    table = Table("setting", "value", "note", title="configuration")
+    table.add_row("HARMONY_LLM", mode, "live or record calls the API; replay does not")
+    table.add_row(
+        "ANTHROPIC_API_KEY",
+        f"set ({len(key)} chars, {key[:7]}…)" if key else "[dim]not set[/dim]",
+        "only needed for live or record" if not calls_the_api else "required",
+    )
+    table.add_row("HARMONY_MODEL", model, "used only when not replaying")
+
+    env_file = Path(".env")
+    table.add_row(
+        ".env",
+        str(env_file.resolve()) if env_file.is_file() else "[dim]none[/dim]",
+        "loaded automatically; exported variables win",
+    )
+    console.print(table)
+
+    # Cassette provenance. A fixture and a recording are indistinguishable at run
+    # time by design, so this is the only place the difference is visible.
+    cassettes = sorted(DEFAULT_CASSETTE_DIR.glob("*.json"))
+    sources: dict[str, int] = {}
+    for path in cassettes:
+        source = json.loads(path.read_text(encoding="utf-8")).get("source", "unknown")
+        sources[source] = sources.get(source, 0) + 1
+
+    if cassettes:
+        described = ", ".join(f"{count} {source}" for source, count in sorted(sources.items()))
+        console.print()
+        console.print(f"cassettes: {len(cassettes)} ({described})")
+        if sources.get("fixture"):
+            console.print(
+                "[yellow]  fixtures are hand-authored, not recorded from a model.[/yellow]"
+            )
+            console.print(
+                "[dim]  re-record with: "
+                "HARMONY_LLM=record python scripts/author_cassettes.py[/dim]"
+            )
+    else:
+        console.print()
+        console.print("[yellow]cassettes: none — replay mode will fail[/yellow]")
+
+    console.print()
+    console.print(verdict)
+    if calls_the_api and not key:
+        console.print(
+            "[red]but ANTHROPIC_API_KEY is not set, so it will fail on the first call[/red]"
+        )
+        raise typer.Exit(1)
+    console.print(
+        "[dim]after a run, confirm per call with: harmony audit explain <run> "
+        "— each model call records its model and token counts[/dim]"
+    )
+
+
 # --- the loop ------------------------------------------------------------------
 
 
